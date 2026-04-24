@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "scope": ".",
+  "applies": ["**/*"],
+  "priority": 0,
+  "context": {
+    "mode": "once_per_turn",
+    "maxTokens": 3000,
+    "include": [
+      {
+        "path": "./AGENTS.md",
+        "kind": "reference",
+        "required": true,
+        "reason": "Project architecture and agent rules"
+      },
+      {
+        "path": "./README.md",
+        "kind": "summary",
+        "required": false,
+        "reason": "Project overview"
+      }
+    ]
+  },
+  "runtime": {
+    "model": null,
+    "thinking": null,
+    "tools": null
+  }
+}

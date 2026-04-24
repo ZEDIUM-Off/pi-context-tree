@@ -1,0 +1,28 @@
+{
+  "$schema": "../schemas/context.schema.json",
+  "version": 1,
+  "scope": "src",
+  "applies": ["**/*.ts"],
+  "priority": 10,
+  "context": {
+    "mode": "once_per_turn",
+    "maxTokens": 3000,
+    "include": [
+      {
+        "path": "../AGENTS.md",
+        "kind": "reference",
+        "required": true,
+        "reason": "Project design principles and extension roadmap"
+      },
+      {
+        "path": "./context-schema.ts",
+        "kind": "schema",
+        "required": false,
+        "reason": "Canonical CONTEXT.json Zod schema"
+      }
+    ]
+  },
+  "runtime": {
+    "thinking": "medium"
+  }
+}

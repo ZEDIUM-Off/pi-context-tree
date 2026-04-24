@@ -1,0 +1,22 @@
+{
+  "$schema": "../schemas/context.schema.json",
+  "version": 1,
+  "scope": "scripts",
+  "applies": ["**/*.ts"],
+  "priority": 10,
+  "context": {
+    "mode": "once_per_turn",
+    "maxTokens": 2000,
+    "include": [
+      {
+        "path": "../src/context-schema.ts",
+        "kind": "schema",
+        "required": true,
+        "reason": "JSON Schema generator derives from canonical Zod schema"
+      }
+    ]
+  },
+  "runtime": {
+    "thinking": "low"
+  }
+}

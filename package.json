@@ -1,0 +1,50 @@
+{
+  "name": "pi-context-tree",
+  "version": "0.1.0",
+  "description": "Pi extension for folder-scoped, path-routed contextualization via CONTEXT.json files.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "validate": "pnpm typecheck && pnpm schema:generate",
+    "pi:dev": "pi -e .",
+    "pi:check": "pnpm typecheck && pi -e .",
+    "pi:install:local": "pi install -l .",
+    "pi:local": "pi",
+    "schema:generate": "tsx scripts/generate-schema.ts"
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "extension",
+    "context",
+    "routing"
+  ],
+  "license": "MIT",
+  "packageManager": "pnpm@10.18.0",
+  "devDependencies": {
+    "@mariozechner/pi-ai": "^0.70.2",
+    "@mariozechner/pi-coding-agent": "^0.70.2",
+    "@mariozechner/pi-tui": "^0.70.2",
+    "@types/node": "latest",
+    "tsx": "^4.21.0",
+    "typebox": "^1.1.33",
+    "typescript": "^6.0.3"
+  },
+  "type": "module",
+  "private": true,
+  "pi": {
+    "extensions": [
+      "./src/index.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-ai": "^0.70.2",
+    "@mariozechner/pi-coding-agent": "^0.70.2",
+    "@mariozechner/pi-tui": "^0.70.2",
+    "typebox": "^1.1.33"
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.3",
+    "minimatch": "^10.2.5",
+    "zod": "^4.3.6"
+  }
+}
