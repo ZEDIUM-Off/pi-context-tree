@@ -8,3 +8,4 @@ coverage/
 .pi/
 context.md
 *.tgz
+.github/

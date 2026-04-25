@@ -2,104 +2,183 @@
 
 ## Project
 
-`pi-context-tree` is a Pi extension for folder-scoped contextualization.
+`pi-context-tree` is a Pi extension for deterministic, path-scoped contextualization.
 
-Goal: move routing/context-loading responsibility out of LLM prose and into machine-readable `CONTEXT.json` files. Agents should receive required folder context automatically when they read or touch files under matching scopes.
+Goal: move routing/context-loading responsibility out of LLM prose and into machine-readable `CONTEXT.json` files. Agents receive required folder context automatically when they read, edit, write, or start work on files under matching scopes.
 
 ## Core idea
 
-- `CONTEXT.json` is machine contract: routing, includes, runtime hints.
-- `CONTEXT.md` is optional human summary: short scope description only.
-- Reference markdown/code files hold actual reusable context.
-- Extension resolves context by file path, not by asking model to discover it.
+```text
+path + operation
+→ parent CONTEXT.json files
+→ matching context[] entries
+→ local files / cached URLs / extracted sections
+→ context bundle
+→ Pi injection point
+```
 
-Expected flow:
+`CONTEXT.json` is the machine contract. There is no special `CONTEXT.md` convention anymore; markdown files are normal inject sources referenced from JSON.
+
+## Current schema direction
+
+Scope is implicit:
 
 ```text
-file path -> parent scope CONTEXT.json files -> merged context bundle -> injected into Pi turn/tool result
+dirname(CONTEXT.json)
 ```
+
+A config uses:
+
+```json
+{
+  "version": 1,
+  "context": [
+    {
+      "match": ["**/*.ts", "!**/*.test.ts"],
+      "operations": ["agent_start", "read", "edit"],
+      "inject": ["./docs/rules.md"]
+    }
+  ]
+}
+```
+
+Rules:
+
+- `context[]` is the primary routing array.
+- `match[]` uses glob patterns, with `!` for exclusions.
+- `operations[]` is required and may contain `"*"`.
+- `inject[]` accepts shorthand strings or typed objects.
+- Paths are resolved relative to the owning `CONTEXT.json`.
+- URLs are cached under `.pi/context-tree/cache/urls`.
+- File extraction supports markdown sections, line ranges, markers, and annotated segments.
+
+## Operations
+
+Supported operations:
+
+```text
+*
+agent_start
+read
+edit
+write
+grep
+find
+ls
+bash
+session_spawn
+subagent_spawn
+```
+
+Behavior implemented:
+
+- `agent_start`: injects bundles when prompt references paths such as `@src/index.ts`.
+- `read`: appends context bundle to read tool results.
+- `edit` / `write`: preflight injects context once, blocks initial mutation, then allows retry.
+- `session_spawn`: used by `/context-tree new <path> [prompt]`.
+- `subagent_spawn`: schema/config concept; runner interop still planned.
 
 ## Design principles
 
 - Keep routing machine-readable and validated.
 - Keep context minimal and path-scoped.
 - Prefer canonical sources over duplicated rules.
-- Do not put large business rules inside `CONTEXT.json`; link files instead.
-- Default to conservative injection: once per turn, deduped, token-capped.
-- Start with explainable behavior before automation-heavy behavior.
-
-## Planned MVP
-
-1. Scan repository for `CONTEXT.json` files.
-2. Resolve applicable scopes from a target file path.
-3. Load `context.include[]` files.
-4. Inject context for `read` results or next provider context.
-5. Add `/context-tree status`, `/context-tree explain <path>`, `/context-tree validate`.
-
-## Future runtime features
-
-- Section extraction from markdown references.
-- Runtime hints for model and thinking level.
-- Tool policy suggestions and later enforcement.
-- Skill file inclusion by scope.
-- UI status showing active scope and loaded context.
+- Do not inject `AGENTS.md` from `CONTEXT.json`; Pi already loads it.
+- Do not inject README on every read/edit; keep broad orientation for startup/session only.
+- Avoid self-read duplication: when reading a file, do not inject that same file as context.
+- Default to explainable behavior before automation-heavy behavior.
+- Core resolver logic must remain testable without Pi.
 
 ## Repository conventions
 
 - Source lives in `src/`.
+- Tests live in `test/` and use Node's built-in test runner with `tsx`.
+- Generated JSON schema lives in `schemas/context.schema.json`.
 - Pi package manifest lives in `package.json` under `pi.extensions`.
 - Use TypeScript strict mode.
 - Use Pi extension APIs from `@mariozechner/pi-coding-agent`.
-- Use CLI commands for tool-owned files when available, e.g. `pnpm init`, `pnpm add`, `tsc --init`, `pi install`.
-- Prefer self-dev via local Pi package install: `pnpm pi:install:local`, then run `pnpm pi:local` and use `/reload` after source changes.
+- Prefer self-dev via local Pi package install: `pnpm pi:install:local`, then `pnpm pi:local` and `/reload` after source changes.
 - Use `pnpm pi:dev` (`pi -e .`) only for quick one-off runs.
-- Before edits, understand Pi docs in `docs/extensions.md` and package docs when packaging changes.
 
-## Context contract draft
+## Commands
 
-Example scope file:
+Implemented commands:
 
-```json
-{
-  "version": 1,
-  "scope": "src/features/billing",
-  "applies": ["**/*.ts", "**/*.tsx"],
-  "priority": 40,
-  "context": {
-    "mode": "once_per_turn",
-    "maxTokens": 4000,
-    "include": [
-      {
-        "path": "./CONTEXT.md",
-        "kind": "summary",
-        "required": true
-      },
-      {
-        "path": "./references/domain-rules.md",
-        "kind": "reference",
-        "sections": ["Billing invariants"],
-        "required": true
-      },
-      {
-        "path": "./billing.types.ts",
-        "kind": "code",
-        "reason": "Canonical billing domain types",
-        "required": true
-      }
-    ]
-  },
-  "runtime": {
-    "model": {
-      "provider": "anthropic",
-      "id": "claude-sonnet-4-5",
-      "policy": "suggest"
-    },
-    "thinking": "medium",
-    "tools": {
-      "policy": "suggest",
-      "enable": ["read", "grep", "edit"],
-      "disable": ["bash"]
-    }
-  }
-}
+```text
+/context-tree help
+/context-tree status
+/context-tree reload
+/context-tree validate [path]
+/context-tree explain <path> [operation]
+/context-tree fetch <path>
+/context-tree cache list
+/context-tree cache refresh <path>
+/context-tree tui on|off|compact|verbose
+/context-tree new <path> [prompt]
 ```
+
+Planned command:
+
+```text
+/context-tree subagent <path> <task>
+```
+
+## TUI
+
+Context Tree uses Pi TUI APIs:
+
+- `ctx.ui.setStatus()` for footer status;
+- `ctx.ui.setWidget()` for a structured widget.
+
+Widget shows:
+
+- valid/invalid `CONTEXT.json` count;
+- last target;
+- operation;
+- source count;
+- context count;
+- bundle hash;
+- warning count;
+- source list in verbose mode.
+
+Modes:
+
+```text
+/context-tree tui compact
+/context-tree tui verbose
+/context-tree tui off
+/context-tree tui on
+```
+
+## Self-context layout
+
+This repo uses its own extension config:
+
+- `CONTEXT.json`: startup README and config-file schema/implementation context.
+- `src/CONTEXT.json`: Pi docs for extension entrypoint; implementation-plan sections for resolver/schema/core files.
+- `scripts/CONTEXT.json`: schema source for schema generation scripts.
+- `test/CONTEXT.json`: test strategy section for test files.
+
+## Validation
+
+Before considering work complete, run:
+
+```bash
+pnpm validate
+```
+
+This runs:
+
+```text
+pnpm typecheck
+pnpm schema:generate
+pnpm test
+```
+
+## Future work
+
+- Richer custom TUI component instead of line widget.
+- Real `pi-subagents` interop for `subagent_spawn`.
+- Real `pi-guardrails` interop for permission policy sharing.
+- Agentic config maintenance commands with history/rollback.
+- More detailed `/context-tree explain` output showing final/skipped/deduped bundle sources.

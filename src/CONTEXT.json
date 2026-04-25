@@ -1,28 +1,48 @@
 {
   "$schema": "../schemas/context.schema.json",
   "version": 1,
-  "scope": "src",
-  "applies": ["**/*.ts"],
-  "priority": 10,
-  "context": {
-    "mode": "once_per_turn",
-    "maxTokens": 3000,
-    "include": [
-      {
-        "path": "../AGENTS.md",
-        "kind": "reference",
-        "required": true,
-        "reason": "Project design principles and extension roadmap"
-      },
-      {
-        "path": "./context-schema.ts",
-        "kind": "schema",
-        "required": false,
-        "reason": "Canonical CONTEXT.json Zod schema"
-      }
-    ]
-  },
-  "runtime": {
-    "thinking": "medium"
-  }
+  "context": [
+    {
+      "match": ["index.ts"],
+      "operations": ["agent_start", "read", "edit", "write", "session_spawn"],
+      "inject": [
+        {
+          "type": "url",
+          "url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md",
+          "kind": "pi-doc",
+          "required": false,
+          "reason": "Pi extension lifecycle, commands, hooks, tools, UI APIs"
+        },
+        {
+          "type": "url",
+          "url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/session.md",
+          "kind": "pi-doc",
+          "required": false,
+          "reason": "Pi session/custom message/session manager APIs"
+        }
+      ]
+    },
+    {
+      "match": ["context-schema.ts", "context-tree.ts", "permissions.ts"],
+      "operations": ["agent_start", "read", "edit", "write", "session_spawn"],
+      "inject": [
+        {
+          "type": "file",
+          "path": "../docs/implementation.md",
+          "kind": "reference",
+          "required": false,
+          "extract": {
+            "sections": ["Schéma cible v1", "Résolution des scopes", "Résolution `context[]`", "Extraction fine", "Tests unitaires et déterminisme"]
+          }
+        },
+        {
+          "type": "url",
+          "url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md",
+          "kind": "pi-doc",
+          "required": false,
+          "reason": "Pi extension hooks used by core integration"
+        }
+      ]
+    }
+  ]
 }
