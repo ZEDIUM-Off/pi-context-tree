@@ -6,5 +6,6 @@ coverage/
 .DS_Store
 *.tsbuildinfo
 .pi/
+.pi-lens/
 context.md
 *.tgz

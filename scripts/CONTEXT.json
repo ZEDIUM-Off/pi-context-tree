@@ -1,19 +1,19 @@
 {
-  "$schema": "../schemas/context.schema.json",
-  "version": 1,
-  "context": [
-    {
-      "match": ["**/*.ts"],
-      "operations": ["agent_start", "read", "edit", "write", "session_spawn"],
-      "inject": [
-        {
-          "type": "file",
-          "path": "../src/context-schema.ts",
-          "kind": "schema",
-          "required": true,
-          "reason": "JSON Schema generator derives from canonical Zod schema"
-        }
-      ]
-    }
-  ]
+	"$schema": "../schemas/context.schema.json",
+	"version": 1,
+	"context": [
+		{
+			"match": ["**/*.ts"],
+			"operations": ["agent_start", "read", "edit", "write", "session_spawn"],
+			"inject": [
+				{
+					"type": "file",
+					"path": "../src/context-schema.ts",
+					"kind": "schema",
+					"required": true,
+					"reason": "JSON Schema generator derives from canonical Zod schema"
+				}
+			]
+		}
+	]
 }

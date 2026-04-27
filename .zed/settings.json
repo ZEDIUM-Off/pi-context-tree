@@ -1,0 +1,19 @@
+{
+	"formatter": {
+		"language_server": {
+			"name": "biome"
+		}
+	},
+	"lsp": {
+		"biome": {
+			"settings": {
+				"require_config_file": true
+			}
+		}
+	},
+	"language_servers": ["biome", "…"],
+	"code_actions_on_format": {
+		"source.fixAll.biome": true,
+		"source.organizeImports.biome": true
+	}
+}

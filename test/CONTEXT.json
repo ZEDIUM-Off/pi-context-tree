@@ -1,21 +1,21 @@
 {
-  "$schema": "../schemas/context.schema.json",
-  "version": 1,
-  "context": [
-    {
-      "match": ["**/*.test.ts"],
-      "operations": ["agent_start", "read", "edit", "write", "session_spawn"],
-      "inject": [
-        {
-          "type": "file",
-          "path": "../docs/implementation.md",
-          "kind": "reference",
-          "required": false,
-          "extract": {
-            "sections": ["Tests unitaires et déterminisme"]
-          }
-        }
-      ]
-    }
-  ]
+	"$schema": "../schemas/context.schema.json",
+	"version": 1,
+	"context": [
+		{
+			"match": ["**/*.test.ts"],
+			"operations": ["agent_start", "read", "edit", "write", "session_spawn"],
+			"inject": [
+				{
+					"type": "file",
+					"path": "../docs/implementation.md",
+					"kind": "reference",
+					"required": false,
+					"extract": {
+						"sections": ["Tests unitaires et déterminisme"]
+					}
+				}
+			]
+		}
+	]
 }

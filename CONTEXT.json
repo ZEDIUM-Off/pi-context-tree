@@ -1,51 +1,56 @@
 {
-  "version": 1,
-  "defaults": {
-    "cache": {
-      "mode": "ttl",
-      "ttl": "14d",
-      "fallback": "stale"
-    },
-    "budget": {
-      "maxTokens": 3000,
-      "perSourceMaxTokens": 2000
-    }
-  },
-  "context": [
-    {
-      "match": ["**/*"],
-      "operations": ["agent_start", "session_spawn"],
-      "inject": [
-        {
-          "type": "file",
-          "path": "./README.md",
-          "kind": "summary",
-          "required": false,
-          "reason": "Project overview for session startup only"
-        }
-      ]
-    },
-    {
-      "match": ["CONTEXT.json", "**/CONTEXT.json"],
-      "operations": ["agent_start", "read", "edit", "write", "session_spawn"],
-      "inject": [
-        {
-          "type": "file",
-          "path": "./src/context-schema.ts",
-          "kind": "schema",
-          "required": true,
-          "reason": "Canonical CONTEXT.json Zod schema"
-        },
-        {
-          "type": "file",
-          "path": "./docs/implementation.md",
-          "kind": "reference",
-          "required": false,
-          "extract": {
-            "sections": ["Schéma cible v1", "Résolution des scopes", "Résolution `context[]`", "Normalisation `inject[]`"]
-          }
-        }
-      ]
-    }
-  ]
+	"version": 1,
+	"defaults": {
+		"cache": {
+			"mode": "ttl",
+			"ttl": "14d",
+			"fallback": "stale"
+		},
+		"budget": {
+			"maxTokens": 3000,
+			"perSourceMaxTokens": 2000
+		}
+	},
+	"context": [
+		{
+			"match": ["**/*"],
+			"operations": ["agent_start", "session_spawn"],
+			"inject": [
+				{
+					"type": "file",
+					"path": "./README.md",
+					"kind": "summary",
+					"required": false,
+					"reason": "Project overview for session startup only"
+				}
+			]
+		},
+		{
+			"match": ["CONTEXT.json", "**/CONTEXT.json"],
+			"operations": ["agent_start", "read", "edit", "write", "session_spawn"],
+			"inject": [
+				{
+					"type": "file",
+					"path": "./src/context-schema.ts",
+					"kind": "schema",
+					"required": true,
+					"reason": "Canonical CONTEXT.json Zod schema"
+				},
+				{
+					"type": "file",
+					"path": "./docs/implementation.md",
+					"kind": "reference",
+					"required": false,
+					"extract": {
+						"sections": [
+							"Schéma cible v1",
+							"Résolution des scopes",
+							"Résolution `context[]`",
+							"Normalisation `inject[]`"
+						]
+					}
+				}
+			]
+		}
+	]
 }
