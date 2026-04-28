@@ -40,5 +40,5 @@
 		"moduleResolution": "nodenext",
 		"noEmit": true
 	},
-	"include": ["src/**/*.ts"]
+	"include": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.ts"]
 }

@@ -1,19 +1,49 @@
 {
 	"$schema": "../schemas/context.schema.json",
-	"version": 1,
-	"context": [
+	"stability": {
+		"state": "canonical",
+		"summary": "Core Context Tree implementation. Treat code here as trusted local pattern for resolver, schema, hooks, commands, and TUI behavior.",
+		"updatedAt": "2026-04-28",
+		"updatedBy": "agent"
+	},
+	"hooks": [
 		{
-			"match": ["index.ts"],
-			"operations": ["agent_start", "read", "edit", "write", "session_spawn"],
+			"on": "agent:start",
 			"inject": [
 				{
 					"type": "url",
 					"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md",
 					"kind": "pi-doc",
-					"required": false,
 					"reason": "Pi extension lifecycle hooks, system prompt injection, tool interception, messages, commands, UI APIs",
-					"extract": {
-						"sections": [
+					"mode": {
+						"type": "sections",
+						"names": [
+							"Lifecycle Overview",
+							"Agent Events",
+							"Tool Events",
+							"ExtensionContext",
+							"ExtensionAPI Methods",
+							"Custom UI"
+						]
+					}
+				},
+				"../docs/implementation.md"
+			]
+		},
+		{
+			"on": "tool:read",
+			"match": [
+				"index.ts"
+			],
+			"inject": [
+				{
+					"type": "url",
+					"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md",
+					"kind": "pi-doc",
+					"reason": "Pi extension lifecycle hooks, system prompt injection, tool interception, messages, commands, UI APIs",
+					"mode": {
+						"type": "sections",
+						"names": [
 							"Lifecycle Overview",
 							"Agent Events",
 							"Tool Events",
@@ -26,30 +56,125 @@
 			]
 		},
 		{
-			"match": ["context-schema.ts", "context-tree.ts", "permissions.ts"],
-			"operations": ["agent_start", "read", "edit", "write", "session_spawn"],
+			"on": "tool:edit",
+			"match": [
+				"index.ts"
+			],
+			"inject": [
+				{
+					"type": "url",
+					"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md",
+					"kind": "pi-doc",
+					"reason": "Pi extension hooks used by runtime integration",
+					"mode": {
+						"type": "sections",
+						"names": [
+							"Lifecycle Overview",
+							"Agent Events",
+							"Tool Events",
+							"ExtensionContext",
+							"ExtensionAPI Methods",
+							"Custom UI"
+						]
+					}
+				}
+			]
+		},
+		{
+			"on": "tool:write",
+			"match": [
+				"index.ts"
+			],
+			"inject": [
+				{
+					"type": "url",
+					"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md",
+					"kind": "pi-doc",
+					"reason": "Pi extension hooks used by runtime integration",
+					"mode": {
+						"type": "sections",
+						"names": [
+							"Lifecycle Overview",
+							"Agent Events",
+							"Tool Events",
+							"ExtensionContext",
+							"ExtensionAPI Methods",
+							"Custom UI"
+						]
+					}
+				}
+			]
+		},
+		{
+			"on": "tool:read",
+			"match": [
+				"context-schema.ts",
+				"context-tree.ts",
+				"permissions.ts",
+				"schema.ts",
+				"bundle.ts",
+				"normalize.ts",
+				"match.ts"
+			],
+			"inject": [
+				"../docs/implementation.md"
+			]
+		},
+		{
+			"on": "tool:edit",
+			"match": [
+				"context-schema.ts",
+				"context-tree.ts",
+				"permissions.ts",
+				"schema.ts",
+				"bundle.ts",
+				"normalize.ts",
+				"match.ts"
+			],
 			"inject": [
 				{
 					"type": "file",
 					"path": "../docs/implementation.md",
 					"kind": "reference",
-					"required": false,
-					"extract": {
-						"sections": [
+					"mode": {
+						"type": "sections",
+						"names": [
 							"Schéma cible v1",
 							"Résolution des scopes",
-							"Résolution `context[]`",
+							"Résolution `hooks[]`",
 							"Extraction fine",
 							"Tests unitaires et déterminisme"
 						]
 					}
-				},
+				}
+			]
+		},
+		{
+			"on": "tool:write",
+			"match": [
+				"context-schema.ts",
+				"context-tree.ts",
+				"permissions.ts",
+				"schema.ts",
+				"bundle.ts",
+				"normalize.ts",
+				"match.ts"
+			],
+			"inject": [
 				{
-					"type": "url",
-					"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md",
-					"kind": "pi-doc",
-					"required": false,
-					"reason": "Pi extension hooks used by core integration"
+					"type": "file",
+					"path": "../docs/implementation.md",
+					"kind": "reference",
+					"mode": {
+						"type": "sections",
+						"names": [
+							"Schéma cible v1",
+							"Résolution des scopes",
+							"Résolution `hooks[]`",
+							"Extraction fine",
+							"Tests unitaires et déterminisme"
+						]
+					}
 				}
 			]
 		}

@@ -1,5 +1,11 @@
 {
-	"version": 1,
+	"$schema": "./schemas/context.schema.json",
+	"stability": {
+		"state": "stable",
+		"summary": "Repository-wide extension configuration and docs are usable baseline; prefer narrower child scope stability when present.",
+		"updatedAt": "2026-04-28",
+		"updatedBy": "agent"
+	},
 	"defaults": {
 		"cache": {
 			"mode": "ttl",
@@ -11,43 +17,105 @@
 			"perSourceMaxTokens": 2000
 		}
 	},
-	"context": [
+	"hooks": [
 		{
-			"match": ["**/*"],
-			"operations": ["agent_start", "session_spawn"],
+			"on": "session:start",
 			"inject": [
 				{
 					"type": "file",
 					"path": "./README.md",
-					"kind": "summary",
-					"required": false,
-					"reason": "Project overview for session startup only"
+					"kind": "overview",
+					"reason": "Project overview; load only when task needs broad orientation",
+					"mode": {
+						"type": "inline"
+					}
+				},
+				{
+					"type": "file",
+					"path": "./package.json",
+					"kind": "package-metadata",
+					"reason": "TypeScript package metadata: scripts, dependencies, Pi extension entrypoint",
+					"mode": {
+						"type": "inline"
+					}
+				},
+				{
+					"type": "url",
+					"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md",
+					"kind": "pi-doc",
+					"reason": "Pi extension lifecycle, hooks, commands, UI, and injection APIs",
+					"mode": {
+						"type": "ref"
+					}
+				},
+				{
+					"type": "url",
+					"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/session.md",
+					"kind": "pi-doc",
+					"reason": "Pi JSONL session tree, entries, messages, branch context",
+					"mode": {
+						"type": "ref"
+					}
+				},
+				{
+					"type": "url",
+					"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/tree.md",
+					"kind": "pi-doc",
+					"reason": "Pi /tree navigation, branch summaries, and leaf switching",
+					"mode": {
+						"type": "ref"
+					}
 				}
 			]
 		},
 		{
-			"match": ["CONTEXT.json", "**/CONTEXT.json"],
-			"operations": ["agent_start", "read", "edit", "write", "session_spawn"],
+			"on": "agent:start",
+			"inject": [
+				"./src/context-schema.ts"
+			]
+		},
+		{
+			"on": "tool:read",
+			"match": [
+				"CONTEXT.json",
+				"**/CONTEXT.json"
+			],
+			"inject": [
+				"./src/context-schema.ts"
+			]
+		},
+		{
+			"on": "tool:edit",
+			"match": [
+				"CONTEXT.json",
+				"**/CONTEXT.json"
+			],
 			"inject": [
 				{
 					"type": "file",
 					"path": "./src/context-schema.ts",
 					"kind": "schema",
-					"required": true,
-					"reason": "Canonical CONTEXT.json Zod schema"
-				},
+					"reason": "Canonical CONTEXT.json Zod schema",
+					"mode": {
+						"type": "inline"
+					}
+				}
+			]
+		},
+		{
+			"on": "tool:write",
+			"match": [
+				"CONTEXT.json",
+				"**/CONTEXT.json"
+			],
+			"inject": [
 				{
 					"type": "file",
-					"path": "./docs/implementation.md",
-					"kind": "reference",
-					"required": false,
-					"extract": {
-						"sections": [
-							"Schéma cible v1",
-							"Résolution des scopes",
-							"Résolution `context[]`",
-							"Normalisation `inject[]`"
-						]
+					"path": "./src/context-schema.ts",
+					"kind": "schema",
+					"reason": "Canonical CONTEXT.json Zod schema",
+					"mode": {
+						"type": "inline"
 					}
 				}
 			]

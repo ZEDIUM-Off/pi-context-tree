@@ -25,6 +25,7 @@ pi install npm:pi-context-tree
 - [ ] No generated URL cache in package or git.
 - [ ] No subagent handoff artifacts such as `context.md` in package or git.
 - [ ] `README.md` documents install and usage.
+- [ ] `CHANGELOG.md` has an entry for the release and GitHub release notes mirror it.
 - [ ] `CONTRIBUTING.md` documents philosophy and development flow.
 - [ ] `LICENSE` exists if package says MIT.
 - [ ] `pnpm validate` passes.
@@ -51,6 +52,24 @@ Runtime dependencies currently needed:
 minimatch
 typebox
 zod
+```
+
+## Changelog and GitHub releases
+
+Before tagging a release:
+
+1. Move relevant `CHANGELOG.md` bullets from `[Unreleased]` to the target version.
+2. Update compare links at the bottom of `CHANGELOG.md`.
+3. Use that version section as GitHub release notes:
+
+```bash
+gh release create vX.Y.Z --title "vX.Y.Z" --notes-file /tmp/pi-context-tree-vX.Y.Z.md
+```
+
+For existing tags, use:
+
+```bash
+gh release edit vX.Y.Z --title "vX.Y.Z" --notes-file /tmp/pi-context-tree-vX.Y.Z.md
 ```
 
 ## Suggested dry run
@@ -89,8 +108,8 @@ From another temp project:
 ```bash
 pi install git:github.com/ZEDIUM-Off/pi-context-tree
 pi
-/context-tree validate
-/context-tree tui compact
+/ct-validate
+/ct-tui on
 ```
 
 Expected:
@@ -101,12 +120,8 @@ Context Tree validation: ...
 
 ## Versioning
 
-Before real public announcement, keep version:
+Current public line is `0.2.x`.
 
-```text
-0.1.x
-```
-
-Use patch releases while schema may still evolve.
-
-When schema stabilizes and subagent/guardrails interop is clearer, consider `0.2.0`.
+Use patch releases for documentation, packaging, and compatibility fixes.
+Use minor releases for schema additions or new commands.
+Use major release only for breaking `CONTEXT.json` schema changes after public adoption.

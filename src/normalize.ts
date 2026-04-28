@@ -1,27 +1,27 @@
 import path from "node:path";
 import type { ContextScope } from "./scan.js";
-import type { CacheConfig, ContextBlock, InjectObject } from "./schema.js";
+import type { CacheConfig, HookBlock, InjectObject } from "./schema.js";
 import { stripAtPrefix } from "./util.js";
 
 export type NormalizedSource = InjectObject & {
 	absolutePath?: string;
 	owner: ContextScope;
 	contextId: string;
-	block: ContextBlock;
+	block: HookBlock;
 	cache?: CacheConfig;
 };
 
 export function normalizeInject(
 	input: string | InjectObject,
 	owner: ContextScope,
-	block: ContextBlock,
+	block: HookBlock,
 	id: string,
 ): NormalizedSource {
 	const obj: InjectObject =
 		typeof input === "string"
 			? input.startsWith("http://") || input.startsWith("https://")
-				? { type: "url", url: input, required: false }
-				: { type: "file", path: input, required: false }
+				? { type: "url", url: input, mode: { type: "ref" } }
+				: { type: "file", path: input, mode: { type: "ref" } }
 			: input;
 	const cache = {
 		...(owner.config.defaults?.cache ?? {}),
@@ -40,8 +40,8 @@ export function dedupeSources(sources: NormalizedSource[]): NormalizedSource[] {
 	return sources.filter((s) => {
 		const key =
 			s.type === "file"
-				? `${s.absolutePath}:${JSON.stringify(s.extract ?? {})}`
-				: `${s.url}:${JSON.stringify(s.extract ?? {})}`;
+				? `${s.absolutePath}:${JSON.stringify(s.mode)}`
+				: `${s.url}:${JSON.stringify(s.mode)}`;
 		if (seen.has(key)) return false;
 		seen.add(key);
 		return true;

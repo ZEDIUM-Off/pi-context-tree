@@ -2,18 +2,18 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { readUrlCached } from "./cache.js";
 import { extractContent } from "./extract.js";
-import { contextId, matchGlobs, operationMatches } from "./match.js";
+import { contextId, matchGlobs } from "./match.js";
 import {
 	dedupeSources,
 	type NormalizedSource,
 	normalizeInject,
 } from "./normalize.js";
 import type { ContextScope } from "./scan.js";
-import type { ContextBlock, Operation } from "./schema.js";
+import type { HookBlock, HookName, StabilityConfig } from "./schema.js";
 import { sha256, stripAtPrefix, toPosix } from "./util.js";
 
 export type LoadedSource = NormalizedSource & {
-	content: string;
+	content?: string;
 	sourceId: string;
 	warnings: string[];
 	cacheMeta?: unknown;
@@ -21,22 +21,29 @@ export type LoadedSource = NormalizedSource & {
 
 export type Bundle = {
 	targetPath: string;
-	operation: Operation;
+	operation: HookName;
 	bundleHash: string;
 	contextIds: string[];
+	stability?: ScopeStability;
 	sources: LoadedSource[];
 	warnings: string[];
 };
 
+export type ScopeStability = {
+	scope: ContextScope;
+	config: StabilityConfig;
+};
+
 export type ExplainResult = {
 	targetPath: string;
-	operation: Operation;
+	operation: HookName;
 	matched: Array<{
 		scope: ContextScope;
-		block: ContextBlock;
+		block: HookBlock;
 		contextId: string;
 	}>;
 	sources: NormalizedSource[];
+	stability?: ScopeStability;
 	warnings: string[];
 };
 
@@ -44,7 +51,7 @@ export function explainPath(
 	cwd: string,
 	scopes: ContextScope[],
 	targetPath: string,
-	operation: Operation = "agent_start",
+	operation: HookName = "agent:start",
 ): ExplainResult {
 	const absoluteTarget = path.resolve(cwd, stripAtPrefix(targetPath));
 	const relativeTarget = toPosix(path.relative(cwd, absoluteTarget));
@@ -55,9 +62,54 @@ export function explainPath(
 	for (const scope of scopes) {
 		const relativeToScope = toPosix(path.relative(scope.dir, absoluteTarget));
 		if (relativeToScope.startsWith("..")) continue;
-		for (const block of scope.config.context) {
-			if (!operationMatches(block.operations, operation)) continue;
-			if (!matchGlobs(block.match, relativeToScope || ".")) continue;
+		for (const block of scope.config.hooks) {
+			if (block.on !== operation) continue;
+			if (block.match && !matchGlobs(block.match, relativeToScope || "."))
+				continue;
+			const id = contextId(scope, block);
+			matched.push({ scope, block, contextId: id });
+			for (const source of block.inject)
+				sources.push(normalizeInject(source, scope, block, id));
+		}
+	}
+	const stability = findNearestStability(scopes, absoluteTarget);
+	return {
+		targetPath: relativeTarget,
+		operation,
+		matched,
+		sources: dedupeSources(sources),
+		...(stability ? { stability } : {}),
+		warnings,
+	};
+}
+
+function findNearestStability(
+	scopes: ContextScope[],
+	absoluteTarget: string,
+): ScopeStability | undefined {
+	let nearest: ScopeStability | undefined;
+	for (const scope of scopes) {
+		if (!scope.config.stability) continue;
+		const relativeToScope = toPosix(path.relative(scope.dir, absoluteTarget));
+		if (relativeToScope.startsWith("..")) continue;
+		if (!nearest || scope.dir.length >= nearest.scope.dir.length)
+			nearest = { scope, config: scope.config.stability };
+	}
+	return nearest;
+}
+
+export function explainHook(
+	_cwd: string,
+	scopes: ContextScope[],
+	operation: HookName,
+): ExplainResult {
+	const matched: ExplainResult["matched"] = [];
+	const sources: NormalizedSource[] = [];
+	const warnings: string[] = [];
+	for (const scope of scopes) {
+		for (const block of scope.config.hooks) {
+			if (block.on !== operation) continue;
+			if (block.match) continue;
 			const id = contextId(scope, block);
 			matched.push({ scope, block, contextId: id });
 			for (const source of block.inject)
@@ -65,7 +117,7 @@ export function explainPath(
 		}
 	}
 	return {
-		targetPath: relativeTarget,
+		targetPath: `<${operation}>`,
 		operation,
 		matched,
 		sources: dedupeSources(sources),
@@ -83,7 +135,7 @@ export async function buildBundle(
 	const absoluteTarget = path.resolve(cwd, stripAtPrefix(explain.targetPath));
 	for (const source of explain.sources) {
 		if (
-			explain.operation === "read" &&
+			explain.operation === "tool:read" &&
 			source.type === "file" &&
 			source.absolutePath === absoluteTarget
 		) {
@@ -93,23 +145,38 @@ export async function buildBundle(
 			continue;
 		}
 		try {
-			loaded.push(await loadSource(cwd, source, options));
+			loaded.push(
+				source.mode.type === "ref"
+					? referenceSource(cwd, source)
+					: await loadSource(cwd, source, options),
+			);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
-			if (source.required) throw new Error(message);
-			warnings.push(message);
+			throw new Error(message);
 		}
 	}
 	const hashInput = loaded
-		.map((s) => `${s.sourceId}\n${s.content}`)
+		.map((s) => `${s.sourceId}\n${s.content ?? "<reference>"}`)
 		.join("\n---\n");
 	return {
 		targetPath: explain.targetPath,
 		operation: explain.operation,
 		contextIds: [...new Set(explain.matched.map((m) => m.contextId))],
+		...(explain.stability ? { stability: explain.stability } : {}),
 		sources: loaded,
 		warnings,
 		bundleHash: sha256(hashInput),
+	};
+}
+
+function referenceSource(cwd: string, source: NormalizedSource): LoadedSource {
+	return {
+		...source,
+		sourceId:
+			source.type === "file"
+				? toPosix(path.relative(cwd, source.absolutePath ?? source.path))
+				: source.url,
+		warnings: [],
 	};
 }
 
@@ -127,7 +194,7 @@ async function loadSource(
 		const raw = await readFile(source.absolutePath, "utf8");
 		return {
 			...source,
-			content: extractContent(raw, source.extract),
+			content: extractSourceContent(raw, source),
 			sourceId: rel,
 			warnings: [],
 		};
@@ -140,11 +207,50 @@ async function loadSource(
 	);
 	return {
 		...source,
-		content: extractContent(cached.content, source.extract),
+		content: extractSourceContent(cached.content, source),
 		sourceId: source.url,
 		warnings: cached.warning ? [cached.warning] : [],
 		cacheMeta: cached.meta,
 	};
+}
+
+function extractSourceContent(raw: string, source: NormalizedSource): string {
+	const mode = source.mode;
+	if (mode.type === "inline") return raw;
+	if (mode.type === "lines") return extractContent(raw, { lines: mode.ranges });
+	if (mode.type === "sections")
+		return extractContent(raw, { sections: mode.names });
+	if (mode.type === "markers")
+		return extractContent(raw, { markers: mode.names });
+	if (mode.type === "segments")
+		return extractContent(raw, { segments: mode.items });
+	return raw;
+}
+
+function formatMode(mode: NormalizedSource["mode"]): string {
+	if (mode.type === "lines") return `lines ${mode.ranges.join(", ")}`;
+	if (mode.type === "sections") return `sections ${mode.names.join(", ")}`;
+	if (mode.type === "markers") return `markers ${mode.names.join(", ")}`;
+	if (mode.type === "segments") return `segments ${mode.items.length}`;
+	return mode.type;
+}
+
+function stabilityMeaning(state: StabilityConfig["state"]): string {
+	const meanings: Record<StabilityConfig["state"], string> = {
+		canonical:
+			"Meaning: trusted reference code. Prefer its conventions when editing related files.",
+		stable:
+			"Meaning: reliable code. Preserve behavior. Reasonable inspiration, not necessarily global pattern.",
+		in_progress:
+			"Meaning: active work. Do not infer stable project conventions from this code.",
+		experimental:
+			"Meaning: prototype/exploration. Do not copy patterns without explicit reason.",
+		deprecated:
+			"Meaning: deprecated code. Avoid extending or copying patterns.",
+		generated:
+			"Meaning: generated code. Do not use as human style; edit generator/source when possible.",
+	};
+	return meanings[state];
 }
 
 export function renderBundle(bundle: Bundle): string {
@@ -152,48 +258,74 @@ export function renderBundle(bundle: Bundle): string {
 		"# Context Tree Bundle",
 		"",
 		`Target: \`${bundle.targetPath}\``,
-		`Operation: \`${bundle.operation}\``,
+		`Hook: \`${bundle.operation}\``,
 		`Bundle: \`${bundle.bundleHash}\``,
-		"",
-		"## Loaded sources",
 	];
-	for (const source of bundle.sources) lines.push(`- ${source.sourceId}`);
-	if (bundle.warnings.length)
-		lines.push("", "## Warnings", ...bundle.warnings.map((w) => `- ${w}`));
-	for (const source of bundle.sources)
+	if (bundle.stability) {
+		const { scope, config } = bundle.stability;
 		lines.push(
 			"",
-			`## Source: ${source.sourceId}`,
-			"",
-			source.content.trimEnd(),
+			"## Scope Stability",
+			`Scope: \`${scope.basePath === "." ? "CONTEXT.json" : `${scope.basePath}/CONTEXT.json`}\``,
+			`State: \`${config.state}\``,
+			stabilityMeaning(config.state),
 		);
+		if (config.updatedAt || config.updatedBy)
+			lines.push(
+				`Updated: ${[config.updatedAt, config.updatedBy && `by ${config.updatedBy}`].filter(Boolean).join(" ")}`,
+			);
+		if (config.until) lines.push(`Until: ${config.until}`);
+		if (config.summary) lines.push("", "Summary:", config.summary);
+	}
+	lines.push("", "## Sources");
+	for (const source of bundle.sources)
+		lines.push(`- ${source.sourceId} (${formatMode(source.mode)})`);
+	if (bundle.warnings.length)
+		lines.push("", "## Warnings", ...bundle.warnings.map((w) => `- ${w}`));
+	for (const source of bundle.sources) {
+		lines.push("", `## Source: ${source.sourceId}`, "");
+		lines.push(`Mode: ${formatMode(source.mode)}`);
+		if (source.kind) lines.push(`Kind: ${source.kind}`);
+		if (source.reason) lines.push(`Reason: ${source.reason}`);
+		if (source.content !== undefined) {
+			lines.push("", "### Content", "", source.content.trimEnd());
+			continue;
+		}
+		lines.push("", "### How to load if needed");
+		if (source.type === "file") lines.push(`- read path="${source.sourceId}"`);
+		else {
+			lines.push(`- web_fetch url="${source.url}"`);
+			lines.push(`- /ct-fetch ${bundle.targetPath}`);
+		}
+	}
 	return lines.join("\n");
 }
 
 export function formatExplain(cwd: string, result: ExplainResult): string {
 	const lines = [
 		`Context tree explain: ${result.targetPath}`,
-		`Operation: ${result.operation}`,
+		`Hook: ${result.operation}`,
 		"",
-		"Matched contexts:",
+		"Matched hooks:",
 	];
 	if (!result.matched.length) lines.push("- none");
 	for (const match of result.matched)
 		lines.push(
-			`- ${toPosix(path.relative(cwd, match.scope.configPath))} id=${match.contextId.slice(0, 12)} match=${JSON.stringify(match.block.match)} operations=${JSON.stringify(match.block.operations)}`,
+			`- ${toPosix(path.relative(cwd, match.scope.configPath))} id=${match.contextId.slice(0, 12)} on=${match.block.on} match=${JSON.stringify(match.block.match ?? [])}`,
 		);
 	lines.push("", "Inject sources:");
 	if (!result.sources.length) lines.push("- none");
 	for (const source of result.sources)
 		lines.push(
-			`- ${source.type === "file" ? toPosix(path.relative(cwd, source.absolutePath ?? "")) : source.url}${source.required ? " required" : ""}`,
+			`- ${source.type === "file" ? toPosix(path.relative(cwd, source.absolutePath ?? "")) : source.url} mode=${formatMode(source.mode)}`,
 		);
 	return lines.join("\n");
 }
 
 export function parsePromptPaths(prompt: string): string[] {
 	const found = new Set<string>();
-	for (const m of prompt.matchAll(/@([\w./-]+\.[\w]+)/g)) if (m[1]) found.add(m[1]);
+	for (const m of prompt.matchAll(/@([\w./-]+\.[\w]+)/g))
+		if (m[1]) found.add(m[1]);
 	for (const m of prompt.matchAll(
 		/(?:^|\s)([\w./-]+\.(?:ts|tsx|js|jsx|md|json|py|go|rs))/g,
 	))

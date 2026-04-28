@@ -106,8 +106,8 @@ Then in Pi:
 
 ```text
 /reload
-/context-tree validate
-/context-tree tui compact
+/ct-validate
+/ct-tui on
 ```
 
 ## Testing expectations

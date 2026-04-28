@@ -1,0 +1,72 @@
+# Changelog
+
+All notable changes to `pi-context-tree` are documented here.
+
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow semantic versioning while the public schema is still pre-1.0.
+
+## [Unreleased]
+
+## [0.2.1] - 2026-04-29
+
+### Added
+
+- Added `docs/schema.md` as full public schema guide for `CONTEXT.json`, hooks, modes, cache, budgets, permissions, and stability metadata.
+- Added versioned schema publishing under `schemas/versions/` plus `pnpm schema:release`.
+- Added release preparation script `pnpm release:prepare`.
+- Added local Pi development helpers that preserve user Pi settings during `pi -e .` runs.
+- Added external workspace smoke-test helper `pnpm test:workspace <giturl|local-path>`.
+- Added human-controlled Context Tree init flow with repository scan, rule discovery, reference proposals, scope proposals, review phases, and resumable sessions.
+- Added upgrade helper modules for future schema/config migrations.
+- Added changelog and mapped existing tags to GitHub releases.
+
+### Changed
+
+- Updated README, contributing guide, implementation notes, release checklist, and repository agent guidance for current `/ct-*` command surface and hook-based schema.
+- Expanded `CONTEXT.json` self-context coverage for source, scripts, and tests.
+- Expanded generated JSON schema for stability, defaults, hook-level/source-level cache and budget hints, permissions, branching, and subagent placeholders.
+- Improved bundle rendering, TUI summaries, command handling, matching, normalization, and schema validation.
+- Tightened npm package hygiene so local `.pi`, `.pi-lens`, `.zed`, workspaces, tarballs, and artifacts stay out of public packages.
+- Bumped package version to `0.2.1` and published matching schema snapshot.
+
+### Fixed
+
+- Fixed stale release/checklist command examples that still used old `/context-tree ...` names.
+- Fixed package dry-run including local Pi Lens and editor state.
+
+## [0.2.0] - 2026-04-29
+
+### Added
+
+- Added hook-based Context Tree runtime using `hooks[]` with `on`, path-aware `match[]`, and `inject[]`.
+- Added support for pathless hooks `session:start` and `agent:start`.
+- Added support for path-aware hooks `tool:read`, `tool:edit`, `tool:write`, `tool:grep`, `tool:find`, `tool:ls`, `tool:bash`, `session:spawn`, and `subagent:spawn`.
+- Added unified source `mode` handling: `inline`, `ref`, `lines`, `sections`, `markers`, and `segments`.
+- Added bundle hashing, source dedupe, self-read skipping, and URL cache support.
+- Added compact TUI status/widget plus `/ct-detail` for full source references.
+- Added `/ct-status`, `/ct-reload`, `/ct-validate`, `/ct-explain`, `/ct-fetch`, `/ct-cache-list`, `/ct-cache-refresh`, `/ct-tui`, `/ct-new`, and `/ct-subagent` command surface.
+- Added schema validation for hook/match compatibility.
+- Added tests for schema, matching, scanning, bundles, extraction, cache, permissions, prompt paths, and TUI behavior.
+
+### Changed
+
+- Replaced earlier context routing shape with implicit-scope `CONTEXT.json` files and hook-driven matching.
+- Split resolver/runtime code into focused modules for bundle building, cache, extraction, hooks, matching, normalization, scanning, schema, sessions, subagents, and TUI.
+- Updated package metadata, scripts, lockfile, TypeScript config, and repository self-context for public extension use.
+
+## [0.1.0] - 2026-04-28
+
+### Added
+
+- Initial public MVP release of `pi-context-tree`.
+- Added Pi extension manifest and install path for GitHub-based usage.
+- Added first `CONTEXT.json` schema and deterministic context routing prototype.
+- Added basic README, contribution docs, license, implementation notes, release checklist, tests, and CI-oriented package setup.
+
+### Fixed
+
+- Synced `pnpm-lock.yaml` for reproducible installs.
+
+[Unreleased]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/ZEDIUM-Off/pi-context-tree/releases/tag/v0.1.0

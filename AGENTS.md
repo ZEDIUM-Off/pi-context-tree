@@ -4,15 +4,15 @@
 
 `pi-context-tree` is a Pi extension for deterministic, path-scoped contextualization.
 
-Goal: move routing/context-loading responsibility out of LLM prose and into machine-readable `CONTEXT.json` files. Agents receive required folder context automatically when they read, edit, write, or start work on files under matching scopes.
+Goal: move routing/context-loading responsibility out of LLM prose and into machine-readable `CONTEXT.json` files. Agents receive mode-selected folder context automatically when they read, edit, write, or start work on files under matching scopes.
 
 ## Core idea
 
 ```text
-path + operation
-→ parent CONTEXT.json files
-→ matching context[] entries
-→ local files / cached URLs / extracted sections
+hook + optional target path
+→ parent/all CONTEXT.json files
+→ matching hooks[] entries
+→ mode-specific inline excerpts or references
 → context bundle
 → Pi injection point
 ```
@@ -31,12 +31,16 @@ A config uses:
 
 ```json
 {
-  "version": 1,
-  "context": [
+  "$schema": "./schemas/context.schema.json",
+  "hooks": [
     {
+      "on": "tool:read",
       "match": ["**/*.ts", "!**/*.test.ts"],
-      "operations": ["agent_start", "read", "edit"],
       "inject": ["./docs/rules.md"]
+    },
+    {
+      "on": "agent:start",
+      "inject": ["./docs/startup.md"]
     }
   ]
 }
@@ -44,39 +48,40 @@ A config uses:
 
 Rules:
 
-- `context[]` is the primary routing array.
+- `hooks[]` is the primary routing array.
+- Path-aware hooks require `match[]`; pathless hooks (`session:start`, `agent:start`) must not define it.
 - `match[]` uses glob patterns, with `!` for exclusions.
-- `operations[]` is required and may contain `"*"`.
 - `inject[]` accepts shorthand strings or typed objects.
 - Paths are resolved relative to the owning `CONTEXT.json`.
 - URLs are cached under `.pi/context-tree/cache/urls`.
-- File extraction supports markdown sections, line ranges, markers, and annotated segments.
+- `mode` controls all source injection behavior: `inline`, `ref`, `lines`, `sections`, `markers`, `segments`.
 
-## Operations
+## Hooks
 
-Supported operations:
+Supported hooks:
 
 ```text
-*
-agent_start
-read
-edit
-write
-grep
-find
-ls
-bash
-session_spawn
-subagent_spawn
+session:start
+agent:start
+tool:read
+tool:edit
+tool:write
+tool:grep
+tool:find
+tool:ls
+tool:bash
+session:spawn
+subagent:spawn
 ```
 
 Behavior implemented:
 
-- `agent_start`: injects bundles when prompt references paths such as `@src/index.ts`.
-- `read`: appends context bundle to read tool results.
-- `edit` / `write`: preflight injects context once, blocks initial mutation, then allows retry.
-- `session_spawn`: used by `/context-tree new <path> [prompt]`.
-- `subagent_spawn`: schema/config concept; runner interop still planned.
+- `session:start`: pathless startup references from all scopes, injected on first agent turn.
+- `agent:start`: pathless hook selected by scope when prompt references paths such as `@src/index.ts`.
+- `tool:read`: appends context bundle to read tool results.
+- `tool:edit` / `tool:write`: preflight injects context once, blocks initial mutation, then allows retry.
+- `session:spawn`: used by `/ct-new <path> [prompt]`.
+- `subagent:spawn`: schema/config concept; runner interop still planned.
 
 ## Design principles
 
@@ -105,22 +110,17 @@ Behavior implemented:
 Implemented commands:
 
 ```text
-/context-tree help
-/context-tree status
-/context-tree reload
-/context-tree validate [path]
-/context-tree explain <path> [operation]
-/context-tree fetch <path>
-/context-tree cache list
-/context-tree cache refresh <path>
-/context-tree tui on|off|compact|verbose
-/context-tree new <path> [prompt]
-```
-
-Planned command:
-
-```text
-/context-tree subagent <path> <task>
+/ct-status
+/ct-detail
+/ct-reload
+/ct-validate [path]
+/ct-explain <path> [hook]
+/ct-fetch <path>
+/ct-cache-list
+/ct-cache-refresh <path>
+/ct-tui on|off
+/ct-new <path> [prompt]
+/ct-subagent <path> <task>
 ```
 
 ## TUI
@@ -139,15 +139,14 @@ Widget shows:
 - context count;
 - bundle hash;
 - warning count;
-- source list in verbose mode.
+- detail hint for explicit source list command.
 
 Modes:
 
 ```text
-/context-tree tui compact
-/context-tree tui verbose
-/context-tree tui off
-/context-tree tui on
+/ct-tui off
+/ct-tui on
+/ct-detail
 ```
 
 ## Self-context layout
@@ -178,7 +177,7 @@ pnpm test
 ## Future work
 
 - Richer custom TUI component instead of line widget.
-- Real `pi-subagents` interop for `subagent_spawn`.
+- Real `pi-subagents` interop for `subagent:spawn`.
 - Real `pi-guardrails` interop for permission policy sharing.
 - Agentic config maintenance commands with history/rollback.
-- More detailed `/context-tree explain` output showing final/skipped/deduped bundle sources.
+- More detailed `/ct-explain` output showing final/skipped/deduped bundle sources.

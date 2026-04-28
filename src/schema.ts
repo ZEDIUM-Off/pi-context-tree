@@ -1,18 +1,32 @@
 import { z } from "zod";
 
-export const operationSchema = z.enum([
-	"*",
-	"agent_start",
-	"read",
-	"edit",
-	"write",
-	"grep",
-	"find",
-	"ls",
-	"bash",
-	"session_spawn",
-	"subagent_spawn",
+export const hookNameSchema = z.enum([
+	"session:start",
+	"agent:start",
+	"tool:read",
+	"tool:edit",
+	"tool:write",
+	"tool:grep",
+	"tool:find",
+	"tool:ls",
+	"tool:bash",
+	"session:spawn",
+	"subagent:spawn",
 ]);
+
+export const pathAwareHooks = new Set<string>([
+	"tool:read",
+	"tool:edit",
+	"tool:write",
+	"tool:grep",
+	"tool:find",
+	"tool:ls",
+	"tool:bash",
+	"session:spawn",
+	"subagent:spawn",
+]);
+
+export const pathlessHooks = new Set<string>(["session:start", "agent:start"]);
 
 export const cacheSchema = z
 	.object({
@@ -59,27 +73,91 @@ export const extractSchema = z.object({
 	maxTokens: z.number().int().positive().optional(),
 });
 
-export const fileInjectSchema = z.object({
-	type: z.literal("file"),
-	path: z.string().min(1),
-	kind: z.string().optional(),
-	required: z.boolean().default(false),
-	cache: cacheSchema.optional(),
-	budget: budgetSchema.optional(),
-	extract: extractSchema.optional(),
-	reason: z.string().optional(),
-});
+export const formatSchema = z
+	.object({
+		language: z.string().min(1).optional(),
+		label: z.string().min(1).optional(),
+	})
+	.strict();
 
-export const urlInjectSchema = z.object({
-	type: z.literal("url"),
-	url: z.string().url(),
-	kind: z.string().optional(),
-	required: z.boolean().default(false),
-	cache: cacheSchema.optional(),
-	budget: budgetSchema.optional(),
-	extract: extractSchema.optional(),
-	reason: z.string().optional(),
-});
+const inlineModeSchema = z
+	.object({
+		type: z.literal("inline"),
+		format: formatSchema.optional(),
+	})
+	.strict();
+
+const refModeSchema = z
+	.object({
+		type: z.literal("ref"),
+		format: formatSchema.optional(),
+	})
+	.strict();
+
+const linesModeSchema = z
+	.object({
+		type: z.literal("lines"),
+		ranges: z.array(z.string().min(1)).min(1),
+		format: formatSchema.optional(),
+	})
+	.strict();
+
+const sectionsModeSchema = z
+	.object({
+		type: z.literal("sections"),
+		names: z.array(z.string().min(1)).min(1),
+		format: formatSchema.optional(),
+	})
+	.strict();
+
+const markersModeSchema = z
+	.object({
+		type: z.literal("markers"),
+		names: z.array(z.string().min(1)).min(1),
+		format: formatSchema.optional(),
+	})
+	.strict();
+
+const segmentsModeSchema = z
+	.object({
+		type: z.literal("segments"),
+		items: z.array(segmentSchema).min(1),
+		format: formatSchema.optional(),
+	})
+	.strict();
+
+export const injectionModeSchema = z.discriminatedUnion("type", [
+	inlineModeSchema,
+	refModeSchema,
+	linesModeSchema,
+	sectionsModeSchema,
+	markersModeSchema,
+	segmentsModeSchema,
+]);
+
+export const fileInjectSchema = z
+	.object({
+		type: z.literal("file"),
+		path: z.string().min(1),
+		kind: z.string().optional(),
+		mode: injectionModeSchema.default({ type: "ref" }),
+		cache: cacheSchema.optional(),
+		budget: budgetSchema.optional(),
+		reason: z.string().optional(),
+	})
+	.strict();
+
+export const urlInjectSchema = z
+	.object({
+		type: z.literal("url"),
+		url: z.string().url(),
+		kind: z.string().optional(),
+		mode: injectionModeSchema.default({ type: "ref" }),
+		cache: cacheSchema.optional(),
+		budget: budgetSchema.optional(),
+		reason: z.string().optional(),
+	})
+	.strict();
 
 export const injectObjectSchema = z.discriminatedUnion("type", [
 	fileInjectSchema,
@@ -87,43 +165,88 @@ export const injectObjectSchema = z.discriminatedUnion("type", [
 ]);
 export const injectSchema = z.union([z.string().min(1), injectObjectSchema]);
 
-export const contextBlockSchema = z
+export const hookBlockSchema = z
 	.object({
-		match: z.array(z.string().min(1)).min(1),
-		operations: z.array(operationSchema).min(1),
+		on: hookNameSchema,
+		match: z.array(z.string().min(1)).min(1).optional(),
 		inject: z.array(injectSchema).min(1),
 		cache: cacheSchema.optional(),
 		budget: budgetSchema.optional(),
 		agents: z.array(z.string().min(1)).optional(),
 	})
-	.refine((value) => value.match.some((pattern) => !pattern.startsWith("!")), {
-		message: "match must contain at least one positive glob",
+	.refine((value) => !pathAwareHooks.has(value.on) || value.match, {
+		message: "path-aware hooks require match[]",
 		path: ["match"],
-	});
+	})
+	.refine((value) => !pathlessHooks.has(value.on) || !value.match, {
+		message: "pathless hooks must not define match[]",
+		path: ["match"],
+	})
+	.refine(
+		(value) =>
+			!value.match || value.match.some((pattern) => !pattern.startsWith("!")),
+		{
+			message: "match must contain at least one positive glob",
+			path: ["match"],
+		},
+	);
+
+export const branchingSchema = z.object({
+	enabled: z.boolean().default(false),
+	strategy: z
+		.enum(["by_scope", "by_path", "by_context_id"])
+		.default("by_scope"),
+	summarizeOnLeave: z.enum(["ask", "always", "never"]).default("ask"),
+});
 
 export const defaultsSchema = z.object({
 	cache: cacheSchema.optional(),
 	budget: budgetSchema.optional(),
 });
 
+export const stabilityStateSchema = z.enum([
+	"canonical",
+	"stable",
+	"in_progress",
+	"experimental",
+	"deprecated",
+	"generated",
+]);
+
+export const stabilitySchema = z
+	.object({
+		state: stabilityStateSchema,
+		summary: z.string().min(1).max(500).optional(),
+		updatedAt: z.string().min(1).optional(),
+		updatedBy: z.string().min(1).max(80).optional(),
+		until: z.string().min(1).max(300).optional(),
+	})
+	.strict();
+
 export const contextFileSchema = z
 	.object({
-		$schema: z.string().optional(),
-		version: z.literal(1),
+		$schema: z.string().min(1),
+		stability: stabilitySchema.optional(),
 		defaults: defaultsSchema.optional(),
-		context: z.array(contextBlockSchema).default([]),
-		session: z.any().optional(),
+		hooks: z.array(hookBlockSchema).default([]),
+		branching: branchingSchema.optional(),
 		permissions: z.any().optional(),
 		subagents: z.any().optional(),
 	})
 	.strict();
 
-export type Operation = z.infer<typeof operationSchema>;
+export type HookName = z.infer<typeof hookNameSchema>;
+export type Operation = HookName;
 export type CacheConfig = z.infer<typeof cacheSchema>;
 export type BudgetConfig = z.infer<typeof budgetSchema>;
 export type ExtractConfig = z.infer<typeof extractSchema>;
+export type InjectionMode = z.infer<typeof injectionModeSchema>;
 export type InjectObject = z.infer<typeof injectObjectSchema>;
 export type InjectInput = z.infer<typeof injectSchema>;
-export type ContextBlock = z.infer<typeof contextBlockSchema>;
+export type HookBlock = z.infer<typeof hookBlockSchema>;
+export type ContextBlock = HookBlock;
+export type BranchingConfig = z.infer<typeof branchingSchema>;
+export type StabilityState = z.infer<typeof stabilityStateSchema>;
+export type StabilityConfig = z.infer<typeof stabilitySchema>;
 export type ContextFile = z.infer<typeof contextFileSchema>;
-export type { Operation as ContextOperation };
+export type { HookName as ContextOperation };

@@ -1,18 +1,81 @@
 {
 	"$schema": "../schemas/context.schema.json",
-	"version": 1,
-	"context": [
+	"stability": {
+		"state": "canonical",
+		"summary": "Tests define expected behavior for schema, resolver, permissions, and TUI. Use as source of truth for behavior changes.",
+		"updatedAt": "2026-04-28",
+		"updatedBy": "agent"
+	},
+	"hooks": [
 		{
-			"match": ["**/*.test.ts"],
-			"operations": ["agent_start", "read", "edit", "write", "session_spawn"],
+			"on": "agent:start",
 			"inject": [
 				{
 					"type": "file",
 					"path": "../docs/implementation.md",
 					"kind": "reference",
-					"required": false,
-					"extract": {
-						"sections": ["Tests unitaires et déterminisme"]
+					"mode": {
+						"type": "sections",
+						"names": [
+							"Tests unitaires et déterminisme"
+						]
+					}
+				}
+			]
+		},
+		{
+			"on": "tool:read",
+			"match": [
+				"**/*.test.ts"
+			],
+			"inject": [
+				{
+					"type": "file",
+					"path": "../docs/implementation.md",
+					"kind": "reference",
+					"mode": {
+						"type": "sections",
+						"names": [
+							"Tests unitaires et déterminisme"
+						]
+					}
+				}
+			]
+		},
+		{
+			"on": "tool:edit",
+			"match": [
+				"**/*.test.ts"
+			],
+			"inject": [
+				{
+					"type": "file",
+					"path": "../docs/implementation.md",
+					"kind": "reference",
+					"mode": {
+						"type": "sections",
+						"names": [
+							"Tests unitaires et déterminisme"
+						]
+					}
+				}
+			]
+		},
+		{
+			"on": "tool:write",
+			"match": [
+				"**/*.test.ts"
+			],
+			"inject": [
+				{
+					"type": "file",
+					"path": "../docs/implementation.md",
+					"kind": "reference",
+					"mode": {
+						"type": "sections",
+						"names": [
+							"Tests unitaires et déterminisme"
+						]
 					}
 				}
 			]

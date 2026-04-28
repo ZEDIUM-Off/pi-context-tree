@@ -9,3 +9,4 @@ coverage/
 .pi-lens/
 context.md
 *.tgz
+.test-workspaces/

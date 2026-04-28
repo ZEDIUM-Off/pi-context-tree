@@ -45,7 +45,7 @@ src/permissions.ts
   Pure scope guard decision engine.
 
 src/tui.ts
-  TUI state, compact/verbose widget rendering, status rendering.
+  TUI state, compact widget rendering, status rendering, on-demand detail text.
 
 src/sessions.ts
   /context-tree new helpers, custom session entries/messages.
@@ -102,12 +102,12 @@ Add optional integration boundaries:
 Stable-ish core exports should be pure and testable:
 
 ```ts
-scanAllContextTree(cwd)
-scanContextParents(cwd, target)
-explainPath(cwd, scopes, target, operation)
-buildBundle(cwd, explain, options)
-renderBundle(bundle)
-decideScopeAccess(input)
+scanAllContextTree(cwd);
+scanContextParents(cwd, target);
+explainPath(cwd, scopes, target, operation);
+buildBundle(cwd, explain, options);
+renderBundle(bundle);
+decideScopeAccess(input);
 ```
 
 Pi-specific functions should not leak into core modules.
@@ -149,7 +149,7 @@ Implemented:
 - edit/write preflight;
 - scoped session creation;
 - basic scope guard fallback;
-- structured TUI compact/verbose;
+- structured compact TUI with on-demand details;
 - tests for core behavior.
 
 Partial or planned:

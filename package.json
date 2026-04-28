@@ -1,6 +1,6 @@
 {
 	"name": "pi-context-tree",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"description": "Pi extension for deterministic path-scoped contextualization via CONTEXT.json files.",
 	"repository": {
 		"type": "git",
@@ -12,13 +12,16 @@
 	"homepage": "https://github.com/ZEDIUM-Off/pi-context-tree#readme",
 	"scripts": {
 		"test": "node --import tsx --test test/**/*.test.ts",
+		"test:workspace": "tsx scripts/test-workspace.ts",
 		"typecheck": "tsc --noEmit",
 		"validate": "pnpm typecheck && pnpm schema:generate && pnpm test",
-		"pi:dev": "pi -e .",
-		"pi:check": "pnpm typecheck && pi -e .",
+		"pi:dev": "tsx scripts/pi-dev-local.ts && pi -e .",
+		"pi:check": "pnpm typecheck && tsx scripts/pi-dev-local.ts && pi -e .",
 		"pi:install:local": "pi install -l .",
 		"pi:local": "pi",
-		"schema:generate": "tsx scripts/generate-schema.ts"
+		"schema:generate": "tsx scripts/generate-schema.ts",
+		"schema:release": "tsx scripts/release-schema.ts",
+		"release:prepare": "pnpm typecheck && pnpm schema:generate && pnpm schema:release && pnpm test"
 	},
 	"keywords": [
 		"pi-package",

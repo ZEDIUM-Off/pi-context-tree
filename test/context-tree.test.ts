@@ -23,20 +23,49 @@ function tempRepo() {
 	return mkdtempSync(join(tmpdir(), "context-tree-"));
 }
 
-test("schema rejects legacy scope and requires operations", () => {
+test("schema rejects unsupported scope/context fields and validates hook match compatibility", () => {
 	assert.throws(() =>
-		contextFileSchema.parse({ version: 1, scope: ".", context: [] }),
+		contextFileSchema.parse({
+			$schema: "./schemas/context.schema.json",
+			scope: ".",
+			hooks: [],
+		}),
 	);
 	assert.throws(() =>
 		contextFileSchema.parse({
-			version: 1,
-			context: [{ match: ["**/*.ts"], inject: ["./a.md"] }],
+			$schema: "./schemas/context.schema.json",
+			hooks: [{ on: "tool:read", inject: ["./a.md"] }],
+		}),
+	);
+	assert.throws(() =>
+		contextFileSchema.parse({
+			$schema: "./schemas/context.schema.json",
+			hooks: [{ on: "agent:start", match: ["**/*.ts"], inject: ["./a.md"] }],
 		}),
 	);
 	assert.doesNotThrow(() =>
 		contextFileSchema.parse({
-			version: 1,
-			context: [{ match: ["**/*.ts"], operations: ["*"], inject: ["./a.md"] }],
+			$schema: "./schemas/context.schema.json",
+			hooks: [{ on: "tool:read", match: ["**/*.ts"], inject: ["./a.md"] }],
+		}),
+	);
+	assert.doesNotThrow(() =>
+		contextFileSchema.parse({
+			$schema: "./schemas/context.schema.json",
+			stability: {
+				state: "in_progress",
+				summary: "Resolver refactor active.",
+				updatedAt: "2026-04-28",
+				updatedBy: "agent",
+			},
+			hooks: [{ on: "agent:start", inject: ["./a.md"] }],
+		}),
+	);
+	assert.throws(() =>
+		contextFileSchema.parse({
+			$schema: "./schemas/context.schema.json",
+			stability: { state: "unknown" },
+			hooks: [],
 		}),
 	);
 });
@@ -51,9 +80,9 @@ test("match globs support positive and ! exclusions", () => {
 	assert.equal(matchGlobs(["!**/*.test.ts"], "foo.ts"), false);
 });
 
-test("operations support wildcard", () => {
-	assert.equal(operationMatches(["*"], "write"), true);
-	assert.equal(operationMatches(["read"], "write"), false);
+test("hooks match exactly", () => {
+	assert.equal(operationMatches(["tool:write"], "tool:write"), true);
+	assert.equal(operationMatches(["tool:read"], "tool:write"), false);
 });
 
 test("scan and explain use implicit scope and relative matching", async () => {
@@ -62,11 +91,10 @@ test("scan and explain use implicit scope and relative matching", async () => {
 	await writeFile(
 		join(repo, "CONTEXT.json"),
 		JSON.stringify({
-			version: 1,
-			context: [
+			$schema: "./schemas/context.schema.json",
+			hooks: [
 				{
-					match: ["src/**/*.ts"],
-					operations: ["agent_start"],
+					on: "agent:start",
 					inject: ["./root.md"],
 				},
 			],
@@ -76,11 +104,10 @@ test("scan and explain use implicit scope and relative matching", async () => {
 	await writeFile(
 		join(repo, "src/features/billing/CONTEXT.json"),
 		JSON.stringify({
-			version: 1,
-			context: [
+			$schema: "./schemas/context.schema.json",
+			hooks: [
 				{
-					match: ["**/*.ts", "!**/*.test.ts"],
-					operations: ["agent_start"],
+					on: "agent:start",
 					inject: ["./docs/rules.md"],
 				},
 			],
@@ -98,24 +125,60 @@ test("scan and explain use implicit scope and relative matching", async () => {
 		repo,
 		scopes,
 		"src/features/billing/invoice.ts",
-		"agent_start",
+		"agent:start",
 	);
 	assert.equal(explained.matched.length, 2);
 	assert.equal(explained.sources.length, 2);
 });
 
+test("bundle includes nearest scope stability", async () => {
+	const repo = tempRepo();
+	await mkdir(join(repo, "src/feature"), { recursive: true });
+	await writeFile(
+		join(repo, "CONTEXT.json"),
+		JSON.stringify({
+			$schema: "./schemas/context.schema.json",
+			stability: { state: "stable", summary: "Root stable." },
+			hooks: [
+				{
+					on: "agent:start",
+					inject: ["./root.md"],
+				},
+			],
+		}),
+	);
+	await writeFile(join(repo, "root.md"), "root");
+	await writeFile(
+		join(repo, "src/feature/CONTEXT.json"),
+		JSON.stringify({
+			$schema: "./schemas/context.schema.json",
+			stability: {
+				state: "in_progress",
+				summary: "Feature refactor active.",
+				updatedBy: "agent",
+			},
+			hooks: [],
+		}),
+	);
+	await writeFile(join(repo, "src/feature/a.ts"), "code");
+	const scopes = await scanContextParents(repo, "src/feature/a.ts");
+	const exp = explainPath(repo, scopes, "src/feature/a.ts", "agent:start");
+	const bundle = await buildBundle(repo, exp);
+	assert.equal(bundle.stability?.config.state, "in_progress");
+	assert.equal(bundle.stability?.scope.basePath, "src/feature");
+});
+
 test("contextId stable and changes with base path", async () => {
 	const block = {
 		match: ["**/*.ts"],
-		operations: ["read", "agent_start"],
+		on: "tool:read",
 	} as const;
 	const a = { basePath: "a" };
 	const b = { basePath: "b" };
-	assert.equal(
+	assert.notEqual(
 		contextId(a, block),
 		contextId(a, {
-			match: ["**/*.ts"],
-			operations: ["agent_start", "read"],
+			on: "agent:start",
 		}),
 	);
 	assert.notEqual(contextId(a, block), contextId(b, block));
@@ -139,12 +202,13 @@ test("bundle loads local files and hashes content", async () => {
 	await writeFile(
 		join(repo, "CONTEXT.json"),
 		JSON.stringify({
-			version: 1,
-			context: [
+			$schema: "./schemas/context.schema.json",
+			hooks: [
 				{
-					match: ["**/*.ts"],
-					operations: ["agent_start"],
-					inject: [{ type: "file", path: "./rules.md", required: true }],
+					on: "agent:start",
+					inject: [
+						{ type: "file", path: "./rules.md", mode: { type: "inline" } },
+					],
 				},
 			],
 		}),
@@ -152,7 +216,7 @@ test("bundle loads local files and hashes content", async () => {
 	await writeFile(join(repo, "rules.md"), "# Rules");
 	await writeFile(join(repo, "x.ts"), "x");
 	const scopes = await scanContextParents(repo, "x.ts");
-	const exp = explainPath(repo, scopes, "x.ts", "agent_start");
+	const exp = explainPath(repo, scopes, "x.ts", "agent:start");
 	const bundle = await buildBundle(repo, exp);
 	assert.equal(bundle.sources.length, 1);
 	assert.match(bundle.bundleHash, /^[a-f0-9]{64}$/);
@@ -163,19 +227,24 @@ test("url cache uses mock fetch and then fresh cache", async () => {
 	await writeFile(
 		join(repo, "CONTEXT.json"),
 		JSON.stringify({
-			version: 1,
-			context: [
+			$schema: "./schemas/context.schema.json",
+			hooks: [
 				{
-					match: ["**/*.ts"],
-					operations: ["agent_start"],
-					inject: ["https://example.com/docs"],
+					on: "agent:start",
+					inject: [
+						{
+							type: "url",
+							url: "https://example.com/docs",
+							mode: { type: "inline" },
+						},
+					],
 				},
 			],
 		}),
 	);
 	await writeFile(join(repo, "x.ts"), "x");
 	const scopes = await scanContextParents(repo, "x.ts");
-	const exp = explainPath(repo, scopes, "x.ts", "agent_start");
+	const exp = explainPath(repo, scopes, "x.ts", "agent:start");
 	let calls = 0;
 	const fetcher = async () => {
 		calls++;
@@ -204,12 +273,15 @@ test("read bundle skips self-injected target file", async () => {
 	await writeFile(
 		join(repo, "CONTEXT.json"),
 		JSON.stringify({
-			version: 1,
-			context: [
+			$schema: "./schemas/context.schema.json",
+			hooks: [
 				{
 					match: ["**/*.md"],
-					operations: ["read"],
-					inject: ["./README.md", "./rules.md"],
+					on: "tool:read",
+					inject: [
+						{ type: "file", path: "./README.md", mode: { type: "inline" } },
+						{ type: "file", path: "./rules.md", mode: { type: "inline" } },
+					],
 				},
 			],
 		}),
@@ -217,7 +289,7 @@ test("read bundle skips self-injected target file", async () => {
 	await writeFile(join(repo, "README.md"), "readme");
 	await writeFile(join(repo, "rules.md"), "rules");
 	const scopes = await scanContextParents(repo, "README.md");
-	const exp = explainPath(repo, scopes, "README.md", "read");
+	const exp = explainPath(repo, scopes, "README.md", "tool:read");
 	const bundle = await buildBundle(repo, exp);
 	assert.deepEqual(
 		bundle.sources.map((s) => s.sourceId),

@@ -6,6 +6,9 @@ coverage/
 .DS_Store
 *.tsbuildinfo
 .pi/
+.pi-lens/
+.zed/
+.test-workspaces/
 context.md
 *.tgz
 .github/

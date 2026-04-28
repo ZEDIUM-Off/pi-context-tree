@@ -1,17 +1,58 @@
 {
 	"$schema": "../schemas/context.schema.json",
-	"version": 1,
-	"context": [
+	"stability": {
+		"state": "stable",
+		"summary": "Maintenance scripts are stable support code. Keep aligned with canonical schema implementation in src/context-schema.ts.",
+		"updatedAt": "2026-04-28",
+		"updatedBy": "agent"
+	},
+	"hooks": [
 		{
-			"match": ["**/*.ts"],
-			"operations": ["agent_start", "read", "edit", "write", "session_spawn"],
+			"on": "agent:start",
+			"inject": [
+				"../src/context-schema.ts"
+			]
+		},
+		{
+			"on": "tool:read",
+			"match": [
+				"**/*.ts"
+			],
+			"inject": [
+				"../src/context-schema.ts"
+			]
+		},
+		{
+			"on": "tool:edit",
+			"match": [
+				"**/*.ts"
+			],
 			"inject": [
 				{
 					"type": "file",
 					"path": "../src/context-schema.ts",
 					"kind": "schema",
-					"required": true,
-					"reason": "JSON Schema generator derives from canonical Zod schema"
+					"reason": "JSON Schema generator derives from canonical Zod schema",
+					"mode": {
+						"type": "inline"
+					}
+				}
+			]
+		},
+		{
+			"on": "tool:write",
+			"match": [
+				"**/*.ts"
+			],
+			"inject": [
+				{
+					"type": "file",
+					"path": "../src/context-schema.ts",
+					"kind": "schema",
+					"reason": "JSON Schema generator derives from canonical Zod schema",
+					"mode": {
+						"type": "inline"
+					}
 				}
 			]
 		}

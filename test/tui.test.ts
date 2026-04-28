@@ -29,21 +29,29 @@ async function buildLocalBundle() {
 	await writeFile(
 		join(repo, "CONTEXT.json"),
 		JSON.stringify({
-			version: 1,
-			context: [
+			$schema: "./schemas/context.schema.json",
+			hooks: [
 				{
 					match: ["src/**/*.ts"],
-					operations: ["read", "edit"],
-					inject: ["./docs/rules.md"],
+					on: "tool:read",
+					inject: [
+						{ type: "file", path: "./docs/rules.md", mode: { type: "inline" } },
+					],
 				},
 			],
 		}),
 	);
 	await mkdir(join(repo, "src"), { recursive: true });
-	await writeFile(join(repo, "src/service.ts"), "export const service = true;\n");
-	await writeFile(join(repo, "docs/rules.md"), "# Rules\nline two\nline three\n");
+	await writeFile(
+		join(repo, "src/service.ts"),
+		"export const service = true;\n",
+	);
+	await writeFile(
+		join(repo, "docs/rules.md"),
+		"# Rules\nline two\nline three\n",
+	);
 	const scopes = await scanContextParents(repo, "src/service.ts");
-	const explained = explainPath(repo, scopes, "src/service.ts", "read");
+	const explained = explainPath(repo, scopes, "src/service.ts", "tool:read");
 	const bundle = await buildBundle(repo, explained);
 	return { repo, bundle };
 }
@@ -53,7 +61,7 @@ test("tui summarizes injected bundle with reference counts, lines, and tokens", 
 	const summary = summarizeBundle(repo, bundle);
 
 	assert.equal(summary.target, "src/service.ts");
-	assert.equal(summary.operation, "read");
+	assert.equal(summary.operation, "tool:read");
 	assert.equal(summary.sourceCount, 1);
 	assert.equal(summary.fileCount, 1);
 	assert.equal(summary.urlCount, 0);
@@ -70,31 +78,31 @@ test("tui compact widget shows injection overview without full source content", 
 		scopesValid: 1,
 		scopesInvalid: 0,
 		enabled: true,
-		mode: "compact",
 		lastInjection: summarizeBundle(repo, bundle),
 	};
 	const lines = widgetLines(state);
 	const joined = lines.join("\n");
 
-	assert.match(statusText(state), /1 src/);
-	assert.match(statusText(state), /tok/);
-	assert.match(joined, /refs: 1 \(1 files, 0 urls\)/);
-	assert.match(joined, /size: 4 lines · ~\d+ tok/);
-	assert.match(joined, /detail: Ctrl\+Shift\+C/);
+	assert.equal(statusText(state), "context-tree on");
+	assert.match(joined, /│ sources {2}│ 1 \(1 files, 0 urls\)/);
+	assert.match(joined, /│ size {5}│ 4 lines · ~\d+ tok/);
+	assert.match(joined, /detail: Alt\+C or \/ct-detail/);
 	assert.doesNotMatch(joined, /line two/);
 });
 
-test("tui verbose widget and detail view expose clickable references", async () => {
+test("detail view exposes clickable references on demand", async () => {
 	const { repo, bundle } = await buildLocalBundle();
 	const state: TuiState = {
 		scopesValid: 1,
 		scopesInvalid: 0,
 		enabled: true,
-		mode: "verbose",
 		lastInjection: summarizeBundle(repo, bundle),
 	};
 
-	assert.match(widgetLines(state).join("\n"), /references:\n- docs\/rules\.md/);
+	assert.doesNotMatch(
+		widgetLines(state).join("\n"),
+		/references:\n- docs\/rules\.md/,
+	);
 	const detail = detailText(state);
 	assert.match(detail, /# Context Tree injection detail/);
 	assert.match(detail, /References: 1 \(1 files, 0 urls\)/);
@@ -103,17 +111,19 @@ test("tui verbose widget and detail view expose clickable references", async () 
 
 test("renderTui writes status and clears widget when disabled", async () => {
 	const { repo, bundle } = await buildLocalBundle();
-	const calls: Array<{ key: string; value: string | string[] | undefined }> = [];
+	const calls: Array<{ key: string; value: string | string[] | undefined }> =
+		[];
 	const ui = {
-		setStatus: (key: string, value: string) => calls.push({ key, value }),
+		setStatus: (key: string, value: string | undefined) =>
+			calls.push({ key, value }),
 		setWidget: (key: string, value: string[] | undefined) =>
 			calls.push({ key, value }),
+		notify: () => undefined,
 	};
 	const state: TuiState = {
 		scopesValid: 1,
 		scopesInvalid: 0,
 		enabled: false,
-		mode: "compact",
 		lastInjection: summarizeBundle(repo, bundle),
 	};
 
@@ -131,7 +141,6 @@ test("injection render still contains full bundle for agent while TUI stays over
 		scopesValid: 1,
 		scopesInvalid: 0,
 		enabled: true,
-		mode: "compact",
 		lastInjection: summarizeBundle(repo, bundle),
 	};
 

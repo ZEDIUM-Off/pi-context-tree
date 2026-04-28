@@ -1,28 +1,32 @@
 import { minimatch } from "minimatch";
 import type { ContextScope } from "./scan.js";
-import type { ContextBlock, Operation } from "./schema.js";
+import type { HookBlock, HookName } from "./schema.js";
 import { sha256, stripAtPrefix, toPosix } from "./util.js";
 
 export { sha256, stripAtPrefix, toPosix };
 
 export function contextId(
-	scope: ContextScope,
-	block: Pick<ContextBlock, "match" | "operations">,
+	scope: Pick<ContextScope, "basePath">,
+	block: { on: HookBlock["on"]; match?: readonly string[] | undefined },
 ): string {
 	return sha256(
 		JSON.stringify({
 			basePath: scope.basePath,
-			match: block.match,
-			operations: [...block.operations].sort(),
+			on: block.on,
+			match: block.match ?? [],
 		}),
 	);
 }
 
+export function hookMatches(hook: HookName, current: HookName): boolean {
+	return hook === current;
+}
+
 export function operationMatches(
-	operations: Operation[],
-	operation: Operation,
+	operations: HookName[],
+	operation: HookName,
 ): boolean {
-	return operations.includes("*") || operations.includes(operation);
+	return operations.includes(operation);
 }
 
 export function matchGlobs(patterns: string[], relativePath: string): boolean {

@@ -1,3 +1,3 @@
 export function subagentInteropHint(): string {
-	return "pi-subagents interop planned. Use /context-tree explain <path> subagent_spawn to inspect context.";
+	return "pi-subagents interop planned. Use /ct-explain <path> subagent:spawn to inspect context.";
 }
