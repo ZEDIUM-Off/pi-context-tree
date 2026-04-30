@@ -9,10 +9,10 @@ Pi extension for deterministic, path-scoped context injection from `CONTEXT.json
 Instead of asking an agent to remember to read project docs, each folder can declare which files or URLs must be injected for a target path and operation.
 
 ```text
-hook + optional target path
+event hook + optional target path
 → parent/all CONTEXT.json files
-→ matching hooks[] entries
-→ mode-specific inline excerpts or references
+→ matching injection_rules[] entries
+→ source-catalog references with mode-specific excerpts or references
 → bounded context bundle
 → Pi turn, read result, or edit preflight
 ```
@@ -23,8 +23,9 @@ Implemented MVP:
 
 - simplified `CONTEXT.json` v1 schema;
 - implicit scope from `dirname(CONTEXT.json)`;
-- `hooks[]` entries with `on`, path-aware `match[]`, and `inject[]`;
-- hook/match compatibility validation: path-aware hooks require `match[]`, pathless hooks forbid it;
+- `sources` catalog plus ordered `injection_rules[]`;
+- per-injection `on` selectors with concrete hooks, hook groups, arrays, and granular overrides;
+- rule compatibility validation: rules with `match[]` are path-aware; rules without `match[]` are runtime/pathless;
 - hooks: `session:start`, `agent:start`, `tool:*`, `session:spawn`, `subagent:spawn`;
 - file and URL inject sources;
 - user-global injection config via `~/.pi/CONTEXT.json` or `PI_CONTEXT_TREE_GLOBAL`;
@@ -46,34 +47,38 @@ Minimal example:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.2.2/schemas/context.schema.json",
-  "hooks": [
+  "$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.3.0/schemas/context.schema.json",
+  "sources": {
+    "domainRules": { "type": "file", "path": "./docs/domain-rules.md" },
+    "piExtensions": {
+      "type": "url",
+      "url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md"
+    }
+  },
+  "injection_rules": [
     {
-      "on": "tool:read",
       "match": ["**/*.ts", "!**/*.test.ts"],
-      "inject": ["./docs/domain-rules.md"]
+      "inject": [{ "source": "domainRules", "on": "tool:read" }]
     },
     {
-      "on": "agent:start",
-      "inject": [
-        "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md"
-      ]
+      "inject": [{ "source": "piExtensions", "on": "agent:start" }]
     }
   ]
 }
 ```
 
-`inject[]` supports shorthand strings and typed objects. Shorthand defaults to reference mode. Object sources use one `mode` field for all content types:
+`sources` entries default to reference mode. Injection items can override source defaults globally or per hook:
 
 ```json
 {
-  "type": "file",
-  "path": "./docs/implementation.md",
-  "kind": "reference",
-  "mode": {
-    "type": "sections",
-    "names": ["Tests unitaires et déterminisme"]
-  }
+  "source": "implementation",
+  "on": [
+    { "hooks": ["tool:read"], "mode": { "type": "ref" } },
+    {
+      "hooks": ["tool:edit", "tool:write"],
+      "mode": { "type": "sections", "names": ["Tests unitaires et déterminisme"] }
+    }
+  ]
 }
 ```
 
@@ -93,9 +98,8 @@ See [`docs/schema.md`](docs/schema.md) for full schema field behavior and best p
 ```text
 /ct-status                 show scan status and last injection summary
 /ct-detail                 show detailed last injection references
-/ct-reload                 reload all CONTEXT.json files
 /ct-validate [path]        validate configs and list valid/invalid paths
-/ct-explain <path> [hook]  explain matched hooks and sources
+/ct-explain <path> [hook]  explain matched injection rules and sources
 /ct-fetch <path>           compile bundle and fetch/cache inline URLs
 /ct-cache-list             show URL cache directory
 /ct-cache-refresh <path>   refresh cached URL sources for target

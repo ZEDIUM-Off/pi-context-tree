@@ -40,29 +40,22 @@ export function registerStatusCommands({ command, deps }: CommandGroupDeps): voi
 		},
 	);
 	command(
-		"ct-reload",
-		"Reload all CONTEXT.json files and refresh Context Tree TUI status.",
-		async (_args, ctx) => {
-			await deps.reload(ctx.cwd);
-			deps.showStatus(ctx);
-			ctx.ui.notify(
-				`Reloaded ${deps.getScopes().length} valid context scope(s), ${deps.getScanErrors().length} invalid.`,
-				deps.getScanErrors().length ? "warning" : "info",
-			);
-		},
-	);
-	command(
 		"ct-validate",
-		"Validate all CONTEXT.json files and print valid/invalid paths. Args: optional path reserved.",
+		"Validate all CONTEXT.json files and print valid/invalid paths.",
 		async (_args, ctx) => {
 			await deps.reload(ctx.cwd);
 			const lines = [
 				`Context Tree validation: ${deps.getScopes().length} valid, ${deps.getScanErrors().length} invalid.`,
 			];
-			for (const scope of deps.getScopes())
+			for (const scope of deps.getScopes()) {
+				const runtimeRules = scope.config.injection_rules.filter(
+					(rule) => !rule.match,
+				).length;
+				const pathRules = scope.config.injection_rules.length - runtimeRules;
 				lines.push(
-					`- valid ${path.relative(ctx.cwd, scope.configPath) || "CONTEXT.json"}`,
+					`- valid ${path.relative(ctx.cwd, scope.configPath) || "CONTEXT.json"}: ${Object.keys(scope.config.sources).length} source(s), ${scope.config.injection_rules.length} rule(s) (${pathRules} path, ${runtimeRules} runtime)`,
 				);
+			}
 			for (const error of deps.getScanErrors())
 				lines.push(
 					`- invalid ${path.relative(ctx.cwd, error.configPath)}: ${error.message}`,

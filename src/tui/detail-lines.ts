@@ -54,12 +54,12 @@ export function renderDetailLines(
 	for (const [i, scope] of (state.scopes ?? []).entries()) {
 		const mark = i === selectedScope ? "▶" : " ";
 		lines.push(
-			`${mark} ${scope.basePath}  state=${scope.state}  confidence=${scope.confidence}  hooks=${scope.hookCount}  last=${scope.lastHook ?? "-"}  children=${scope.children.length}`,
+			`${mark} ${scope.basePath}  state=${scope.state}  confidence=${scope.confidence}  rules=${scope.hookCount}  last=${scope.lastHook ?? "-"}  children=${scope.children.length}`,
 		);
 		if (i === selectedScope) {
 			lines.push(`    config: file://${scope.configPath}`);
 			lines.push(
-				`    path-aware=${scope.pathAwareHookCount} pathless=${scope.pathlessHookCount} sources=${scope.sourceCount}`,
+				`    path-aware=${scope.pathAwareHookCount} runtime=${scope.pathlessHookCount} sources=${scope.sourceCount}`,
 			);
 			if (scope.summary) lines.push(`    summary: ${scope.summary}`);
 			if (scope.children.length)

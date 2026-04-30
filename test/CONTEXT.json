@@ -1,68 +1,41 @@
 {
-	"$schema": "../schemas/context.schema.json",
+	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.3.0/schemas/context.schema.json",
 	"stability": {
 		"state": "canonical",
 		"summary": "Tests define expected behavior for schema, resolver, permissions, and TUI. Use as source of truth for behavior changes.",
 		"updatedAt": "2026-04-28",
 		"updatedBy": "agent"
 	},
-	"hooks": [
+	"sources": {
+		"implementationTests": {
+			"type": "file",
+			"path": "../docs/implementation.md",
+			"kind": "reference",
+			"mode": {
+				"type": "sections",
+				"names": [
+					"Tests unitaires et déterminisme"
+				]
+			}
+		}
+	},
+	"injection_rules": [
 		{
-			"on": "agent:start",
 			"inject": [
 				{
-					"type": "file",
-					"path": "../docs/implementation.md",
-					"kind": "reference",
-					"mode": {
-						"type": "sections",
-						"names": ["Tests unitaires et déterminisme"]
-					}
+					"source": "implementationTests",
+					"on": "agent:start"
 				}
 			]
 		},
 		{
-			"on": "tool:read",
-			"match": ["**/*.test.ts"],
+			"match": [
+				"**/*.test.ts"
+			],
 			"inject": [
 				{
-					"type": "file",
-					"path": "../docs/implementation.md",
-					"kind": "reference",
-					"mode": {
-						"type": "sections",
-						"names": ["Tests unitaires et déterminisme"]
-					}
-				}
-			]
-		},
-		{
-			"on": "tool:edit",
-			"match": ["**/*.test.ts"],
-			"inject": [
-				{
-					"type": "file",
-					"path": "../docs/implementation.md",
-					"kind": "reference",
-					"mode": {
-						"type": "sections",
-						"names": ["Tests unitaires et déterminisme"]
-					}
-				}
-			]
-		},
-		{
-			"on": "tool:write",
-			"match": ["**/*.test.ts"],
-			"inject": [
-				{
-					"type": "file",
-					"path": "../docs/implementation.md",
-					"kind": "reference",
-					"mode": {
-						"type": "sections",
-						"names": ["Tests unitaires et déterminisme"]
-					}
+					"source": "implementationTests",
+					"on": "tool:*"
 				}
 			]
 		}

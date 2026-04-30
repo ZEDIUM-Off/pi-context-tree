@@ -1,6 +1,6 @@
 import type { NormalizedSource } from "../normalize.js";
 import type { ContextScope } from "../scan.js";
-import type { HookBlock, HookName, StabilityConfig } from "../schema.js";
+import type { HookName, InjectionRule, StabilityConfig } from "../schema.js";
 
 export type LoadedSource = NormalizedSource & {
 	content?: string;
@@ -24,14 +24,20 @@ export type ScopeStability = {
 	config: StabilityConfig;
 };
 
+export type MatchedContext = {
+	scope: ContextScope;
+	contextId: string;
+	rule: InjectionRule;
+	ruleIndex: number;
+	injectIndex: number;
+	source: string;
+	hook: HookName;
+};
+
 export type ExplainResult = {
 	targetPath: string;
 	operation: HookName;
-	matched: Array<{
-		scope: ContextScope;
-		block: HookBlock;
-		contextId: string;
-	}>;
+	matched: MatchedContext[];
 	sources: NormalizedSource[];
 	stability?: ScopeStability;
 	warnings: string[];

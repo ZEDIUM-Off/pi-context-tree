@@ -1,119 +1,63 @@
 {
-	"$schema": "../schemas/context.schema.json",
+	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.3.0/schemas/context.schema.json",
 	"stability": {
 		"state": "canonical",
-		"summary": "Core Context Tree implementation. Treat code here as trusted local pattern for resolver, schema, hooks, commands, and TUI behavior.",
+		"summary": "Core Context Tree implementation. Treat code here as trusted local pattern for resolver, schema, rules, commands, and TUI behavior.",
 		"updatedAt": "2026-04-28",
 		"updatedBy": "agent"
 	},
-	"hooks": [
+	"sources": {
+		"piExtensions": {
+			"type": "url",
+			"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md",
+			"kind": "pi-doc",
+			"reason": "Pi extension lifecycle hooks, system prompt injection, tool interception, messages, commands, UI APIs",
+			"mode": {
+				"type": "sections",
+				"names": [
+					"Lifecycle Overview",
+					"Agent Events",
+					"Tool Events",
+					"ExtensionContext",
+					"ExtensionAPI Methods",
+					"Custom UI"
+				]
+			}
+		},
+		"implementation": {
+			"type": "file",
+			"path": "../docs/implementation.md",
+			"kind": "reference",
+			"mode": {
+				"type": "ref"
+			}
+		}
+	},
+	"injection_rules": [
 		{
-			"on": "agent:start",
 			"inject": [
 				{
-					"type": "url",
-					"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md",
-					"kind": "pi-doc",
-					"reason": "Pi extension lifecycle hooks, system prompt injection, tool interception, messages, commands, UI APIs",
-					"mode": {
-						"type": "sections",
-						"names": [
-							"Lifecycle Overview",
-							"Agent Events",
-							"Tool Events",
-							"ExtensionContext",
-							"ExtensionAPI Methods",
-							"Custom UI"
-						]
-					}
+					"source": "piExtensions",
+					"on": "agent:start"
 				},
-				"../docs/implementation.md"
-			]
-		},
-		{
-			"on": "tool:read",
-			"match": ["index.ts"],
-			"inject": [
 				{
-					"type": "url",
-					"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md",
-					"kind": "pi-doc",
-					"reason": "Pi extension lifecycle hooks, system prompt injection, tool interception, messages, commands, UI APIs",
-					"mode": {
-						"type": "sections",
-						"names": [
-							"Lifecycle Overview",
-							"Agent Events",
-							"Tool Events",
-							"ExtensionContext",
-							"ExtensionAPI Methods",
-							"Custom UI"
-						]
-					}
+					"source": "implementation",
+					"on": "agent:start"
 				}
 			]
 		},
 		{
-			"on": "tool:edit",
-			"match": ["index.ts"],
-			"inject": [
-				{
-					"type": "url",
-					"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md",
-					"kind": "pi-doc",
-					"reason": "Pi extension hooks used by runtime integration",
-					"mode": {
-						"type": "sections",
-						"names": [
-							"Lifecycle Overview",
-							"Agent Events",
-							"Tool Events",
-							"ExtensionContext",
-							"ExtensionAPI Methods",
-							"Custom UI"
-						]
-					}
-				}
-			]
-		},
-		{
-			"on": "tool:write",
-			"match": ["index.ts"],
-			"inject": [
-				{
-					"type": "url",
-					"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md",
-					"kind": "pi-doc",
-					"reason": "Pi extension hooks used by runtime integration",
-					"mode": {
-						"type": "sections",
-						"names": [
-							"Lifecycle Overview",
-							"Agent Events",
-							"Tool Events",
-							"ExtensionContext",
-							"ExtensionAPI Methods",
-							"Custom UI"
-						]
-					}
-				}
-			]
-		},
-		{
-			"on": "tool:read",
 			"match": [
-				"context-schema.ts",
-				"context-tree.ts",
-				"permissions.ts",
-				"schema.ts",
-				"bundle.ts",
-				"normalize.ts",
-				"match.ts"
+				"index.ts"
 			],
-			"inject": ["../docs/implementation.md"]
+			"inject": [
+				{
+					"source": "piExtensions",
+					"on": "tool:*"
+				}
+			]
 		},
 		{
-			"on": "tool:edit",
 			"match": [
 				"context-schema.ts",
 				"context-tree.ts",
@@ -125,45 +69,22 @@
 			],
 			"inject": [
 				{
-					"type": "file",
-					"path": "../docs/implementation.md",
-					"kind": "reference",
-					"mode": {
-						"type": "sections",
-						"names": [
-							"Schéma cible v1",
-							"Résolution des scopes",
-							"Résolution `hooks[]`",
-							"Extraction fine",
-							"Tests unitaires et déterminisme"
-						]
-					}
-				}
-			]
-		},
-		{
-			"on": "tool:write",
-			"match": [
-				"context-schema.ts",
-				"context-tree.ts",
-				"permissions.ts",
-				"schema.ts",
-				"bundle.ts",
-				"normalize.ts",
-				"match.ts"
-			],
-			"inject": [
+					"source": "implementation",
+					"on": "tool:read"
+				},
 				{
-					"type": "file",
-					"path": "../docs/implementation.md",
-					"kind": "reference",
+					"source": "implementation",
+					"on": [
+						"tool:edit",
+						"tool:write"
+					],
 					"mode": {
 						"type": "sections",
 						"names": [
-							"Schéma cible v1",
-							"Résolution des scopes",
-							"Résolution `hooks[]`",
-							"Extraction fine",
+							"Schema target",
+							"Resolution of scopes",
+							"Rule resolution",
+							"Runtime behavior",
 							"Tests unitaires et déterminisme"
 						]
 					}

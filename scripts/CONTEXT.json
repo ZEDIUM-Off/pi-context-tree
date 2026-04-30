@@ -1,45 +1,46 @@
 {
-	"$schema": "../schemas/context.schema.json",
+	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.3.0/schemas/context.schema.json",
 	"stability": {
 		"state": "stable",
 		"summary": "Maintenance scripts are stable support code. Keep aligned with canonical schema implementation in src/context-schema.ts.",
 		"updatedAt": "2026-04-28",
 		"updatedBy": "agent"
 	},
-	"hooks": [
+	"sources": {
+		"schema": {
+			"type": "file",
+			"path": "../src/context-schema.ts",
+			"kind": "schema",
+			"reason": "JSON Schema generator derives from canonical Zod schema",
+			"mode": {
+				"type": "ref"
+			}
+		}
+	},
+	"injection_rules": [
 		{
-			"on": "agent:start",
-			"inject": ["../src/context-schema.ts"]
-		},
-		{
-			"on": "tool:read",
-			"match": ["**/*.ts"],
-			"inject": ["../src/context-schema.ts"]
-		},
-		{
-			"on": "tool:edit",
-			"match": ["**/*.ts"],
 			"inject": [
 				{
-					"type": "file",
-					"path": "../src/context-schema.ts",
-					"kind": "schema",
-					"reason": "JSON Schema generator derives from canonical Zod schema",
-					"mode": {
-						"type": "inline"
-					}
+					"source": "schema",
+					"on": "agent:start"
 				}
 			]
 		},
 		{
-			"on": "tool:write",
-			"match": ["**/*.ts"],
+			"match": [
+				"**/*.ts"
+			],
 			"inject": [
 				{
-					"type": "file",
-					"path": "../src/context-schema.ts",
-					"kind": "schema",
-					"reason": "JSON Schema generator derives from canonical Zod schema",
+					"source": "schema",
+					"on": "tool:read"
+				},
+				{
+					"source": "schema",
+					"on": [
+						"tool:edit",
+						"tool:write"
+					],
 					"mode": {
 						"type": "inline"
 					}

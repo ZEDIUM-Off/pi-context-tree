@@ -1,5 +1,5 @@
 {
-	"$schema": "./schemas/context.schema.json",
+	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.3.0/schemas/context.schema.json",
 	"stability": {
 		"state": "stable",
 		"summary": "Repository-wide extension configuration and docs are usable baseline; prefer narrower child scope stability when present.",
@@ -17,90 +17,68 @@
 			"perSourceMaxTokens": 2000
 		}
 	},
-	"hooks": [
+	"sources": {
+		"schema": {
+			"type": "file",
+			"path": "./src/context-schema.ts",
+			"kind": "schema",
+			"reason": "Canonical CONTEXT.json Zod schema",
+			"mode": {
+				"type": "ref"
+			}
+		},
+		"readme": {
+			"type": "file",
+			"path": "./README.md",
+			"kind": "overview",
+			"reason": "Project overview; load only when task needs broad orientation",
+			"mode": {
+				"type": "inline"
+			}
+		},
+		"package": {
+			"type": "file",
+			"path": "./package.json",
+			"kind": "package-metadata",
+			"reason": "TypeScript package metadata: scripts, dependencies, Pi extension entrypoint",
+			"mode": {
+				"type": "inline"
+			}
+		}
+	},
+	"injection_rules": [
 		{
-			"on": "session:start",
 			"inject": [
 				{
-					"type": "file",
-					"path": "./README.md",
-					"kind": "overview",
-					"reason": "Project overview; load only when task needs broad orientation",
-					"mode": {
-						"type": "inline"
-					}
+					"source": "readme",
+					"on": "session:start"
 				},
 				{
-					"type": "file",
-					"path": "./package.json",
-					"kind": "package-metadata",
-					"reason": "TypeScript package metadata: scripts, dependencies, Pi extension entrypoint",
-					"mode": {
-						"type": "inline"
-					}
+					"source": "package",
+					"on": "session:start"
 				},
 				{
-					"type": "url",
-					"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md",
-					"kind": "pi-doc",
-					"reason": "Pi extension lifecycle, hooks, commands, UI, and injection APIs",
-					"mode": {
-						"type": "ref"
-					}
-				},
-				{
-					"type": "url",
-					"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/session.md",
-					"kind": "pi-doc",
-					"reason": "Pi JSONL session tree, entries, messages, branch context",
-					"mode": {
-						"type": "ref"
-					}
-				},
-				{
-					"type": "url",
-					"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/tree.md",
-					"kind": "pi-doc",
-					"reason": "Pi /tree navigation, branch summaries, and leaf switching",
-					"mode": {
-						"type": "ref"
-					}
+					"source": "schema",
+					"on": "agent:start"
 				}
 			]
 		},
 		{
-			"on": "agent:start",
-			"inject": ["./src/context-schema.ts"]
-		},
-		{
-			"on": "tool:read",
-			"match": ["CONTEXT.json", "**/CONTEXT.json"],
-			"inject": ["./src/context-schema.ts"]
-		},
-		{
-			"on": "tool:edit",
-			"match": ["CONTEXT.json", "**/CONTEXT.json"],
+			"match": [
+				"CONTEXT.json",
+				"**/CONTEXT.json"
+			],
 			"inject": [
 				{
-					"type": "file",
-					"path": "./src/context-schema.ts",
-					"kind": "schema",
-					"reason": "Canonical CONTEXT.json Zod schema",
-					"mode": {
-						"type": "inline"
-					}
-				}
-			]
-		},
-		{
-			"on": "tool:write",
-			"match": ["CONTEXT.json", "**/CONTEXT.json"],
-			"inject": [
+					"source": "schema",
+					"on": "tool:read"
+				},
 				{
-					"type": "file",
-					"path": "./src/context-schema.ts",
-					"kind": "schema",
-					"reason": "Canonical CONTEXT.json Zod schema",
+					"source": "schema",
+					"on": [
+						"tool:edit",
+						"tool:write"
+					],
 					"mode": {
 						"type": "inline"
 					}

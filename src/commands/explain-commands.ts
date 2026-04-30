@@ -20,7 +20,7 @@ const hookNames = new Set<HookName>([
 export function registerExplainCommands({ command }: CommandGroupDeps): void {
 	command(
 		"ct-explain",
-		"Explain matched hooks and sources for target. Args: <path> [hook], default hook agent:start.",
+		"Explain matched injection rules and sources for target. Args: <path> [hook], default hook agent:start.",
 		async (args, ctx) => {
 			const parts = args.trim().split(/\s+/).filter(Boolean);
 			const maybeHook = parts.at(-1) as HookName | undefined;

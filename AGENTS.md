@@ -9,10 +9,10 @@ Goal: move routing/context-loading responsibility out of LLM prose and into mach
 ## Core idea
 
 ```text
-hook + optional target path
+event hook + optional target path
 → parent/all CONTEXT.json files
-→ matching hooks[] entries
-→ mode-specific inline excerpts or references
+→ matching injection_rules[] entries
+→ source-catalog references with mode-specific excerpts or references
 → context bundle
 → Pi injection point
 ```
@@ -32,15 +32,17 @@ A config uses:
 ```json
 {
   "$schema": "./schemas/context.schema.json",
-  "hooks": [
+  "sources": {
+    "rules": { "type": "file", "path": "./docs/rules.md" },
+    "startup": { "type": "file", "path": "./docs/startup.md" }
+  },
+  "injection_rules": [
     {
-      "on": "tool:read",
       "match": ["**/*.ts", "!**/*.test.ts"],
-      "inject": ["./docs/rules.md"]
+      "inject": [{ "source": "rules", "on": "tool:read" }]
     },
     {
-      "on": "agent:start",
-      "inject": ["./docs/startup.md"]
+      "inject": [{ "source": "startup", "on": "agent:start" }]
     }
   ]
 }
@@ -48,11 +50,12 @@ A config uses:
 
 Rules:
 
-- `hooks[]` is the primary routing array.
-- Path-aware hooks require `match[]`; pathless hooks (`session:start`, `agent:start`) must not define it.
-- `match[]` uses glob patterns, with `!` for exclusions.
-- `inject[]` accepts shorthand strings or typed objects.
-- Paths are resolved relative to the owning `CONTEXT.json`.
+- `sources` is the reusable source catalog.
+- `injection_rules[]` is the primary ordered routing array.
+- Rules with `match[]` are path-aware and may only use path-aware hooks in `inject[].on`.
+- Rules without `match[]` are runtime/pathless and may only use runtime hooks.
+- `match[]` uses glob patterns relative to the owning `CONTEXT.json`; `@` escapes to the Pi root.
+- `inject[]` items reference `source` ids and declare their own `on` selector.
 - URLs are cached under `.pi/context-tree/cache/urls`.
 - `mode` controls all source injection behavior: `inline`, `ref`, `lines`, `sections`, `markers`, `segments`.
 
@@ -112,7 +115,6 @@ Implemented commands:
 ```text
 /ct-status
 /ct-detail
-/ct-reload
 /ct-validate [path]
 /ct-explain <path> [hook]
 /ct-fetch <path>

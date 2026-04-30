@@ -51,6 +51,21 @@ function configForScope(
 	session: InitSession,
 	version?: string,
 ): ContextFile {
+	const rules = withReferenceHooks(scope, session).map(normalizeHook);
+	const sources: ContextFile["sources"] = {};
+	const injectionRules: ContextFile["injection_rules"] = [];
+	for (const hook of rules) {
+		const inject = hook.inject.map((source) => {
+			const normalized = normalizeInject(source);
+			const id = sourceIdFor(normalized, sources);
+			sources[id] = normalized;
+			return { source: id, on: hook.on as ContextFile["injection_rules"][number]["inject"][number]["on"] };
+		});
+		injectionRules.push({
+			...(hook.match ? { match: hook.match } : {}),
+			inject,
+		});
+	}
 	return {
 		$schema: currentReleaseSchemaUrl(version),
 		stability: {
@@ -59,9 +74,8 @@ function configForScope(
 			updatedAt: new Date().toISOString().slice(0, 10),
 			updatedBy: "ct-init",
 		},
-		hooks: withReferenceHooks(scope, session).map(
-			normalizeHook,
-		) as ContextFile["hooks"],
+		sources,
+		injection_rules: injectionRules,
 	};
 }
 
@@ -107,7 +121,7 @@ function normalizeHook(hook: {
 	};
 }
 
-function normalizeInject(source: unknown): unknown {
+function normalizeInject(source: unknown): ContextFile["sources"][string] {
 	if (typeof source === "string") {
 		if (source.startsWith("context7:"))
 			return {
@@ -118,23 +132,55 @@ function normalizeInject(source: unknown): unknown {
 			};
 		if (/^https?:\/\//.test(source))
 			return { type: "url", url: source, mode: { type: "ref" } };
-		return source;
+		return { type: "file", path: source, mode: { type: "ref" } };
 	}
-	if (typeof source !== "object" || !source) return source;
+	if (typeof source !== "object" || !source)
+		return { type: "file", path: "./docs/context-tree/generated.md", mode: { type: "ref" } };
 	const record = source as Record<string, unknown>;
-	if (record.type) return source;
-	if (typeof record.url === "string")
+	if (record.type === "url" && typeof record.url === "string")
 		return {
-			...record,
 			type: "url",
 			url: record.url.startsWith("context7:")
 				? `https://context7.com/${record.url.slice("context7:".length).replace(/^\/+/, "")}`
 				: record.url,
-			mode: record.mode ?? { type: "ref" },
+			...(typeof record.kind === "string" ? { kind: record.kind } : {}),
+			mode: isMode(record.mode) ? record.mode : { type: "ref" },
+			...(typeof record.reason === "string" ? { reason: record.reason } : {}),
 		};
+	if (record.type === "file" && typeof record.path === "string")
+		return {
+			type: "file",
+			path: record.path,
+			...(typeof record.kind === "string" ? { kind: record.kind } : {}),
+			mode: isMode(record.mode) ? record.mode : { type: "ref" },
+			...(typeof record.reason === "string" ? { reason: record.reason } : {}),
+		};
+	if (typeof record.url === "string")
+		return { type: "url", url: record.url, mode: { type: "ref" } };
 	if (typeof record.path === "string")
-		return { ...record, type: "file", mode: record.mode ?? { type: "ref" } };
-	return source;
+		return { type: "file", path: record.path, mode: { type: "ref" } };
+	return { type: "file", path: "./docs/context-tree/generated.md", mode: { type: "ref" } };
+}
+
+function isMode(value: unknown): value is ContextFile["sources"][string]["mode"] {
+	return typeof value === "object" && value !== null && typeof (value as { type?: unknown }).type === "string";
+}
+
+function sourceIdFor(source: ContextFile["sources"][string], existing: ContextFile["sources"]): string {
+	const base = source.type === "file" ? source.path : source.url;
+	const slug = base
+		.replace(/^https?:\/\//, "")
+		.replace(/[^a-zA-Z0-9]+/g, "_")
+		.replace(/^_+|_+$/g, "")
+		.slice(0, 48) || "source";
+	let id = slug;
+	let suffix = 2;
+	const value = JSON.stringify(source);
+	while (existing[id] && JSON.stringify(existing[id]) !== value) {
+		id = `${slug}_${suffix}`;
+		suffix += 1;
+	}
+	return id;
 }
 
 function referencedGeneratedDocs(scope: ScopeProposal): string[] {

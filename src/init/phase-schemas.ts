@@ -4,7 +4,7 @@ import {
 	hookNameSchema,
 	injectSchema,
 	pathAwareHooks,
-	pathlessHooks,
+	runtimeHooks,
 	stabilityStateSchema,
 } from "../schema.js";
 
@@ -60,7 +60,7 @@ export const hookProposalSchema = z
 		message: "path-aware hooks require match[]",
 		path: ["match"],
 	})
-	.refine((value) => !pathlessHooks.has(value.on) || !value.match, {
+	.refine((value) => !runtimeHooks.has(value.on) || !value.match, {
 		message: "pathless hooks must not define match[]",
 		path: ["match"],
 	})

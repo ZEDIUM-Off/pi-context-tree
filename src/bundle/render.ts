@@ -25,7 +25,7 @@ export function renderBundle(bundle: Bundle): string {
 		lines.push(
 			"",
 			"## Scope Stability",
-			`Scope: \`${scope.basePath === "." ? "CONTEXT.json" : `${scope.basePath}/CONTEXT.json`}\``,
+			`Scope: \`${scope.basePath === "<root>" ? "CONTEXT.json" : `${scope.basePath}/CONTEXT.json`}\``,
 			`State: \`${config.state}\``,
 			stabilityMeaning(config.state),
 		);
@@ -65,13 +65,16 @@ export function formatExplain(cwd: string, result: ExplainResult): string {
 		`Context tree explain: ${result.targetPath}`,
 		`Hook: ${result.operation}`,
 		"",
-		"Matched hooks:",
+		"Matched injection rules:",
 	];
 	if (!result.matched.length) lines.push("- none");
-	for (const match of result.matched)
+	for (const match of result.matched) {
+		const configPath = toPosix(path.relative(cwd, match.scope.configPath));
+		const detail = `source=${match.source} hook=${match.hook} match=${JSON.stringify(match.rule.match ?? [])}`;
 		lines.push(
-			`- ${toPosix(path.relative(cwd, match.scope.configPath))} id=${match.contextId.slice(0, 12)} on=${match.block.on} match=${JSON.stringify(match.block.match ?? [])}`,
+			`- ${configPath} id=${match.contextId.slice(0, 12)} ${detail}`,
 		);
+	}
 	lines.push("", "Inject sources:");
 	if (!result.sources.length) lines.push("- none");
 	for (const source of result.sources)

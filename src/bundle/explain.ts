@@ -1,9 +1,10 @@
 import path from "node:path";
-import { contextId, matchGlobs } from "../match.js";
+import { contextId, matchScopedPatterns } from "../match.js";
 import {
 	dedupeSources,
 	type NormalizedSource,
 	normalizeInject,
+	resolveInjectionForHook,
 } from "../normalize.js";
 import type { ContextScope } from "../scan.js";
 import type { HookName } from "../schema.js";
@@ -28,14 +29,44 @@ export function explainPath(
 			? relativeTarget || "."
 			: toPosix(path.relative(scope.dir, absoluteTarget));
 		if (!scope.global && relativeToScope.startsWith("..")) continue;
-		for (const block of scope.config.hooks) {
-			if (block.on !== operation) continue;
-			if (block.match && !matchGlobs(block.match, relativeToScope || "."))
-				continue;
-			const id = contextId(scope, block);
-			matched.push({ scope, block, contextId: id });
-			for (const source of block.inject)
-				sources.push(normalizeInject(source, scope, block, id));
+		for (const [ruleIndex, rule] of scope.config.injection_rules.entries()) {
+			if (rule.match) {
+				if (
+					!matchScopedPatterns({
+						patterns: rule.match,
+						relativeToScope: relativeToScope || ".",
+						relativeToRoot: relativeTarget || ".",
+					})
+				)
+					continue;
+			}
+			for (const [injectIndex, item] of rule.inject.entries()) {
+				const source = resolveInjectionForHook(scope, item, operation);
+				if (!source) continue;
+				const id = contextId(scope, {
+					match: rule.match,
+					hook: operation,
+					source: item.source,
+					ruleIndex,
+					injectIndex,
+				});
+				matched.push({
+					scope,
+					rule,
+					ruleIndex,
+					injectIndex,
+					source: item.source,
+					hook: operation,
+					contextId: id,
+				});
+				sources.push(
+					normalizeInject(source, scope, id, {
+						...(rule.match ? { ruleMatch: rule.match } : {}),
+						sourceKey: item.source,
+						hook: operation,
+					}),
+				);
+			}
 		}
 	}
 	const stability = findNearestStability(scopes, absoluteTarget);
@@ -58,13 +89,33 @@ export function explainHook(
 	const sources: NormalizedSource[] = [];
 	const warnings: string[] = [];
 	for (const scope of scopes) {
-		for (const block of scope.config.hooks) {
-			if (block.on !== operation) continue;
-			if (block.match) continue;
-			const id = contextId(scope, block);
-			matched.push({ scope, block, contextId: id });
-			for (const source of block.inject)
-				sources.push(normalizeInject(source, scope, block, id));
+		for (const [ruleIndex, rule] of scope.config.injection_rules.entries()) {
+			if (rule.match) continue;
+			for (const [injectIndex, item] of rule.inject.entries()) {
+				const source = resolveInjectionForHook(scope, item, operation);
+				if (!source) continue;
+				const id = contextId(scope, {
+					hook: operation,
+					source: item.source,
+					ruleIndex,
+					injectIndex,
+				});
+				matched.push({
+					scope,
+					rule,
+					ruleIndex,
+					injectIndex,
+					source: item.source,
+					hook: operation,
+					contextId: id,
+				});
+				sources.push(
+					normalizeInject(source, scope, id, {
+						sourceKey: item.source,
+						hook: operation,
+					}),
+				);
+			}
 		}
 	}
 	return {

@@ -94,7 +94,7 @@ function summarizeScope(
 	bundle?: Bundle,
 	last?: LastInjection,
 ): ScopeSummary {
-	const hooks = scope.config.hooks;
+	const rules = scope.config.injection_rules;
 	const state = scope.config.stability?.state ?? "unspecified";
 	const children = all
 		.filter((s) => s.dir !== scope.dir && path.dirname(s.dir) === scope.dir)
@@ -108,16 +108,16 @@ function summarizeScope(
 		configPath: scope.configPath,
 		state,
 		confidence: confidenceFor(state, scope),
-		hookCount: hooks.length,
-		pathAwareHookCount: hooks.filter((h) => h.match).length,
-		pathlessHookCount: hooks.filter((h) => !h.match).length,
+		hookCount: rules.length,
+		pathAwareHookCount: rules.filter((rule) => rule.match).length,
+		pathlessHookCount: rules.filter((rule) => !rule.match).length,
 		...(bundle
 			? { lastHook: bundle.operation, lastBundleHash: bundle.bundleHash }
 			: {}),
 		...(lastTouches && last
 			? { lastHook: last.operation, lastBundleHash: last.bundleHash }
 			: {}),
-		sourceCount: hooks.reduce((sum, hook) => sum + hook.inject.length, 0),
+		sourceCount: Object.keys(scope.config.sources).length,
 		children,
 		...(scope.config.stability?.summary
 			? { summary: scope.config.stability.summary }
@@ -164,7 +164,7 @@ function confidenceFor(
 	if (["canonical", "stable", "generated"].includes(state)) return "high";
 	if (
 		["in_progress", "experimental"].includes(state) ||
-		scope.config.hooks.length === 0
+		scope.config.injection_rules.length === 0
 	)
 		return "medium";
 	return "low";

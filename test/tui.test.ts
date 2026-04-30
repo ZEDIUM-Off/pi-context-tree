@@ -35,13 +35,13 @@ async function buildLocalBundle() {
 		join(repo, "CONTEXT.json"),
 		JSON.stringify({
 			$schema: "./schemas/context.schema.json",
-			hooks: [
+			sources: {
+				rules: { type: "file", path: "./docs/rules.md", mode: { type: "inline" } },
+			},
+			injection_rules: [
 				{
 					match: ["src/**/*.ts"],
-					on: "tool:read",
-					inject: [
-						{ type: "file", path: "./docs/rules.md", mode: { type: "inline" } },
-					],
+					inject: [{ source: "rules", on: "tool:read" }],
 				},
 			],
 		}),

@@ -6,6 +6,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-30
+
+### Added
+
+- Added source-catalog based `CONTEXT.json` routing with top-level `sources` and ordered `injection_rules[]`.
+- Added per-injection `on` selectors, hook groups, and hook-specific override entries for mode/cache/budget metadata.
+- Added scope-relative matching with `@` root-relative escape support.
+- Added automatic Context Tree schema and best-practice maintenance context for `CONTEXT.json` read/edit/write operations.
+- Added tests for new schema validation, matching, merge order, runtime/path-aware rule separation, hot re-resolution behavior, and maintenance injection.
+
+### Changed
+
+- Replaced the primary legacy `hooks[]` routing model with inferred path-aware/runtime `injection_rules[]`.
+- Migrated repository self-context files and public docs to the new schema syntax.
+- Updated generated JSON schema and public API exports for source definitions, injection rules, on selectors, and resolver helpers.
+- Updated `/ct-explain`, status/TUI summaries, init generation, and upgrade planning to use the new routing contract.
+
 ## [0.2.2] - 2026-04-30
 
 ### Added
@@ -82,7 +99,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 - Synced `pnpm-lock.yaml` for reproducible installs.
 
-[Unreleased]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.1.0...v0.2.0

@@ -38,7 +38,7 @@ async function readContextScope(
 		dir,
 		basePath: options.global
 			? "<global>"
-			: toPosix(path.relative(cwd, dir)) || ".",
+			: toPosix(path.relative(cwd, dir)) || "<root>",
 		config,
 		...(options.global ? { global: true } : {}),
 	};
