@@ -230,8 +230,11 @@ export const contextFileSchema = z
 		defaults: defaultsSchema.optional(),
 		hooks: z.array(hookBlockSchema).default([]),
 		branching: branchingSchema.optional(),
-		permissions: z.any().optional(),
-		subagents: z.any().optional(),
+		permissions: z
+			.object({ scopeGuard: z.unknown().optional() })
+			.passthrough()
+			.optional(),
+		subagents: z.unknown().optional(),
 	})
 	.strict();
 
@@ -244,9 +247,7 @@ export type InjectionMode = z.infer<typeof injectionModeSchema>;
 export type InjectObject = z.infer<typeof injectObjectSchema>;
 export type InjectInput = z.infer<typeof injectSchema>;
 export type HookBlock = z.infer<typeof hookBlockSchema>;
-export type ContextBlock = HookBlock;
 export type BranchingConfig = z.infer<typeof branchingSchema>;
 export type StabilityState = z.infer<typeof stabilityStateSchema>;
 export type StabilityConfig = z.infer<typeof stabilitySchema>;
 export type ContextFile = z.infer<typeof contextFileSchema>;
-export type { HookName as ContextOperation };

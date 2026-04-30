@@ -6,6 +6,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-04-30
+
+### Added
+
+- Added user-global Context Tree config loading from `~/.pi/CONTEXT.json`, with `PI_CONTEXT_TREE_GLOBAL` override for tests and custom setups.
+
+### Changed
+
+- Cleaned up the code architecture by splitting runtime, command, bundle, TUI, and init-wizard responsibilities into focused modules.
+- Split `/ct-*` command registration into dedicated command groups for status, explain, cache, upgrade, init, and subagent concerns.
+- Updated public documentation to reflect the current architecture and command surface.
+
+### Removed
+
+- Removed `/ct-new`; session workflows are now left to Context Tree configuration and future config-driven integrations.
+
 ## [0.2.1] - 2026-04-29
 
 ### Added
@@ -66,7 +82,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 - Synced `pnpm-lock.yaml` for reproducible installs.
 
-[Unreleased]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ZEDIUM-Off/pi-context-tree/releases/tag/v0.1.0

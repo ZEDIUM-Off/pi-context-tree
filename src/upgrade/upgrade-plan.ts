@@ -20,7 +20,9 @@ export async function buildUpgradePlan(
 	const out: UpgradePlanItem[] = [];
 	for (const scope of scan.scopes) {
 		const raw = await readJson(scope.configPath);
-		const ref = parseSchemaRef(raw?.$schema);
+		const schemaRef =
+			typeof raw?.$schema === "string" ? raw.$schema : undefined;
+		const ref = parseSchemaRef(schemaRef);
 		if (ref.kind === "local") {
 			out.push({
 				path: scope.configPath,
@@ -58,7 +60,9 @@ export async function buildUpgradePlan(
 	return out.sort((a, b) => a.path.localeCompare(b.path));
 }
 
-async function readJson(filePath: string): Promise<any | undefined> {
+async function readJson(
+	filePath: string,
+): Promise<Record<string, unknown> | undefined> {
 	try {
 		return JSON.parse(await readFile(filePath, "utf8"));
 	} catch {

@@ -16,18 +16,14 @@
 					"kind": "reference",
 					"mode": {
 						"type": "sections",
-						"names": [
-							"Tests unitaires et déterminisme"
-						]
+						"names": ["Tests unitaires et déterminisme"]
 					}
 				}
 			]
 		},
 		{
 			"on": "tool:read",
-			"match": [
-				"**/*.test.ts"
-			],
+			"match": ["**/*.test.ts"],
 			"inject": [
 				{
 					"type": "file",
@@ -35,18 +31,14 @@
 					"kind": "reference",
 					"mode": {
 						"type": "sections",
-						"names": [
-							"Tests unitaires et déterminisme"
-						]
+						"names": ["Tests unitaires et déterminisme"]
 					}
 				}
 			]
 		},
 		{
 			"on": "tool:edit",
-			"match": [
-				"**/*.test.ts"
-			],
+			"match": ["**/*.test.ts"],
 			"inject": [
 				{
 					"type": "file",
@@ -54,18 +46,14 @@
 					"kind": "reference",
 					"mode": {
 						"type": "sections",
-						"names": [
-							"Tests unitaires et déterminisme"
-						]
+						"names": ["Tests unitaires et déterminisme"]
 					}
 				}
 			]
 		},
 		{
 			"on": "tool:write",
-			"match": [
-				"**/*.test.ts"
-			],
+			"match": ["**/*.test.ts"],
 			"inject": [
 				{
 					"type": "file",
@@ -73,9 +61,7 @@
 					"kind": "reference",
 					"mode": {
 						"type": "sections",
-						"names": [
-							"Tests unitaires et déterminisme"
-						]
+						"names": ["Tests unitaires et déterminisme"]
 					}
 				}
 			]

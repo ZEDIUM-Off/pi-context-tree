@@ -1,3 +1,4 @@
+import type { ExtensionContextLike } from "../../pi/types.js";
 import type { InitSession } from "../types.js";
 import { standardReviewActions } from "./actions.js";
 import {
@@ -13,7 +14,7 @@ export type StandardReviewAction =
 	| "cancel";
 
 export async function reviewEditableRows<TRow>(
-	ctx: any,
+	ctx: ExtensionContextLike,
 	options: {
 		title: string;
 		rows: TRow[];
@@ -42,7 +43,7 @@ export async function reviewEditableRows<TRow>(
 }
 
 export async function editJsonRow<TRow>(
-	ctx: any,
+	ctx: ExtensionContextLike,
 	title: string,
 	row: TRow,
 	apply: (value: TRow) => void,

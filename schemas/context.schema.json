@@ -835,7 +835,13 @@
       ],
       "additionalProperties": false
     },
-    "permissions": {},
+    "permissions": {
+      "type": "object",
+      "properties": {
+        "scopeGuard": {}
+      },
+      "additionalProperties": {}
+    },
     "subagents": {}
   },
   "required": [

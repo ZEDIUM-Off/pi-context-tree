@@ -9,13 +9,18 @@ Current implementation works, but several responsibilities still live together i
 ## Current state
 
 ```text
-src/context-schema.ts   schema and inferred TS types
-src/context-tree.ts     scan, match, normalize, extraction, URL cache, bundle rendering
+src/context-schema.ts   explicit schema compatibility exports
+src/context-tree.ts     explicit public API compatibility exports
+src/public-api.ts       curated public API surface
+src/runtime/            Pi extension lifecycle and tool hooks
+src/commands/           slash command registration and handlers
+src/bundle/             explain/build/render/stability bundle modules
+src/tui/                TUI state summaries, widgets, detail panel, formatting
+src/init/               init wizard phase machine, prompts, submit/review flow
 src/permissions.ts      scope guard decision logic
-src/index.ts            Pi extension hooks, commands, TUI state, session command
 ```
 
-This is acceptable for MVP, but `context-tree.ts` and `index.ts` are too broad for long-term maintenance.
+The large legacy entrypoints have been split. `context-tree.ts` is now a compatibility facade over the curated `public-api.ts` surface rather than a broad export of internals.
 
 ## Target architecture
 
@@ -39,25 +44,34 @@ src/cache.ts
   URL cache keying, TTL, stale fallback, metadata read/write.
 
 src/bundle.ts
-  Load sources, apply self-read skip, build bundle hash, render bundle markdown.
+  Compatibility facade for public bundle exports.
+
+src/bundle/
+  Explain hooks, load sources, apply self-read skip, build bundle hash, render bundle markdown.
 
 src/permissions.ts
   Pure scope guard decision engine.
 
 src/tui.ts
+  Compatibility facade for public TUI exports.
+
+src/tui/
   TUI state, compact widget rendering, status rendering, on-demand detail text.
 
-src/sessions.ts
-  /context-tree new helpers, custom session entries/messages.
-
 src/subagents.ts
-  Resolve subagent_spawn context and interop with pi-subagents.
+  Resolve subagent:spawn context and interop with pi-subagents.
 
-src/commands.ts
-  Slash command parsing and handlers.
+src/commands/register.ts
+  Slash command composition only.
 
-src/hooks.ts
-  Pi event hooks: before_agent_start, tool_call, tool_result, turn_start.
+src/commands/*-commands.ts
+  Slash command handlers grouped by status, explain, cache, upgrade, init, and subagent concerns.
+
+src/runtime/lifecycle.ts
+  Pi lifecycle hooks: session_start, before_agent_start, turn_start.
+
+src/runtime/tool-hooks.ts
+  Pi tool hooks: tool_call, tool_result.
 
 src/index.ts
   Extension composition only: register hooks and commands.
@@ -76,16 +90,15 @@ Move pure functions without behavior change:
 - URL cache → `cache.ts`
 - `buildBundle`, `renderBundle`, `formatExplain` → `bundle.ts`
 
-Keep compatibility exports from `context-tree.ts` during transition.
+Keep `context-tree.ts` as a curated compatibility facade over `public-api.ts` during transition.
 
 ### Phase 2 — Pi integration split
 
 Move side-effectful code:
 
 - TUI state/rendering → `tui.ts`
-- command handlers → `commands.ts`
-- hook handlers → `hooks.ts`
-- session creation → `sessions.ts`
+- command handlers → grouped `commands/*-commands.ts` modules
+- hook handlers → `runtime/lifecycle.ts` and `runtime/tool-hooks.ts`
 
 `index.ts` should become short.
 
@@ -147,13 +160,14 @@ Implemented:
 - bundle hash/render;
 - read injection;
 - edit/write preflight;
-- scoped session creation;
+- user-global config loading via `~/.pi/CONTEXT.json` / `PI_CONTEXT_TREE_GLOBAL`;
 - basic scope guard fallback;
 - structured compact TUI with on-demand details;
 - tests for core behavior.
 
 Partial or planned:
 
+- `session:spawn` remains a schema hook for future config-driven session workflows; the old `/ct-new` command has been removed;
 - defaults cascade is currently basic, not deeply modeled/tested across all fields;
 - token budget is represented but not fully enforced;
 - `context` hook is not used yet;
@@ -165,9 +179,8 @@ Partial or planned:
 
 ## Release guidance
 
-For a first public release, prefer transparency:
+For public releases, prefer transparency:
 
-- call the release `0.1.0`;
-- describe current MVP clearly;
+- describe current runtime and command surface exactly;
 - mark subagents/guardrails/config-maintenance as planned;
 - keep architecture-review doc visible to contributors.

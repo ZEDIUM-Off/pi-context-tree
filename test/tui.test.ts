@@ -19,6 +19,11 @@ import {
 	widgetLines,
 } from "../src/tui.js";
 
+process.env.PI_CONTEXT_TREE_GLOBAL = join(
+	tmpdir(),
+	"context-tree-test-no-global-CONTEXT.json",
+);
+
 function tempRepo() {
 	return mkdtempSync(join(tmpdir(), "context-tree-tui-"));
 }

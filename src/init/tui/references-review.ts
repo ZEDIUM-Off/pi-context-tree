@@ -1,3 +1,4 @@
+import type { ExtensionContextLike } from "../../pi/types.js";
 import type { InitSession, ReferenceProposal } from "../types.js";
 import { standardReviewActions } from "./actions.js";
 import {
@@ -10,7 +11,7 @@ import { showProposalTable } from "./proposal-table.js";
 export type ReferencesReviewAction = StandardReviewAction;
 
 export async function reviewReferencesPhase(
-	ctx: any,
+	ctx: ExtensionContextLike,
 	session: InitSession,
 ): Promise<ReferencesReviewAction> {
 	while (true) {
@@ -40,7 +41,7 @@ export async function reviewReferencesPhase(
 }
 
 async function editReference(
-	ctx: any,
+	ctx: ExtensionContextLike,
 	session: InitSession,
 	index: number,
 ): Promise<void> {
@@ -72,9 +73,9 @@ async function editReference(
 		if (next) {
 			ref.url = next;
 			ref.kind = next.startsWith("context7:") ? "context7" : "url";
-			ref.libraryId = next.startsWith("context7:")
-				? next.slice("context7:".length)
-				: undefined;
+			if (next.startsWith("context7:"))
+				ref.libraryId = next.slice("context7:".length);
+			else delete ref.libraryId;
 		}
 		return;
 	}

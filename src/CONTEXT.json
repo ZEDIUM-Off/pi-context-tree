@@ -32,9 +32,7 @@
 		},
 		{
 			"on": "tool:read",
-			"match": [
-				"index.ts"
-			],
+			"match": ["index.ts"],
 			"inject": [
 				{
 					"type": "url",
@@ -57,9 +55,7 @@
 		},
 		{
 			"on": "tool:edit",
-			"match": [
-				"index.ts"
-			],
+			"match": ["index.ts"],
 			"inject": [
 				{
 					"type": "url",
@@ -82,9 +78,7 @@
 		},
 		{
 			"on": "tool:write",
-			"match": [
-				"index.ts"
-			],
+			"match": ["index.ts"],
 			"inject": [
 				{
 					"type": "url",
@@ -116,9 +110,7 @@
 				"normalize.ts",
 				"match.ts"
 			],
-			"inject": [
-				"../docs/implementation.md"
-			]
+			"inject": ["../docs/implementation.md"]
 		},
 		{
 			"on": "tool:edit",

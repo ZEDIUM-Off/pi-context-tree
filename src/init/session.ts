@@ -41,43 +41,6 @@ export async function loadLatestInitSession(
 }
 
 function sanitizeInitSession(session: InitSession): InitSession {
-	session.scopes = session.scopes.map((scope) => ({
-		...scope,
-		hooks: scope.hooks.map((hook) => {
-			const record = hook as typeof hook & { operations?: string[] };
-			const { operations, ...rest } = record;
-			return {
-				...rest,
-				on: normalizeHookName(record.on, operations),
-			};
-		}),
-	}));
 	if (session.phase === "preview") session.generatedFiles = [];
 	return session;
-}
-
-function normalizeHookName(on: string, operations?: string[]): string {
-	const firstOperation = operations?.find(
-		(operation) => operation.trim() !== "*",
-	);
-	const value = (firstOperation ?? on).trim();
-	const aliases: Record<string, string> = {
-		"*": "agent:start",
-		agent_start: "agent:start",
-		agentStart: "agent:start",
-		session_start: "session:start",
-		sessionStart: "session:start",
-		read: "tool:read",
-		edit: "tool:edit",
-		write: "tool:write",
-		grep: "tool:grep",
-		find: "tool:find",
-		ls: "tool:ls",
-		bash: "tool:bash",
-		session_spawn: "session:spawn",
-		sessionSpawn: "session:spawn",
-		subagent_spawn: "subagent:spawn",
-		subagentSpawn: "subagent:spawn",
-	};
-	return aliases[value] ?? value;
 }

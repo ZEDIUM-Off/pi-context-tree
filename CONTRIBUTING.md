@@ -141,17 +141,18 @@ src/match.ts           glob/operation matching
 src/normalize.ts       inject/default normalization
 src/extract.ts         section/line/marker extraction
 src/cache.ts           URL cache
-src/bundle.ts          bundle build/render/hash
+src/bundle.ts          compatibility facade for bundle exports
+src/bundle/            explain/build/render/stability modules
 src/permissions.ts     scope guard decisions
-src/tui.ts             status/widget rendering
-src/sessions.ts        scoped session command helpers
-src/subagents.ts       pi-subagents interop
-src/commands.ts        slash command handlers
-src/hooks.ts           Pi event hooks
+src/tui.ts             compatibility facade for TUI exports
+src/tui/               status/widget/detail rendering and summaries
+src/runtime/           Pi lifecycle and tool hooks
+src/commands/          slash command groups
+src/subagents.ts       pi-subagents interop placeholder
 src/index.ts           extension composition only
 ```
 
-Current code is not fully split yet; see `docs/architecture-review.md`.
+The runtime is split into focused modules; see `docs/architecture-review.md` for current boundaries and planned integration points.
 
 ## Pull request checklist
 

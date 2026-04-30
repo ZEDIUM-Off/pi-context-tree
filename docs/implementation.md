@@ -252,8 +252,10 @@ Context Tree commands use `/ct-*` for discoverability:
 /ct-fetch <path>           compile bundle and fetch/cache inline URLs
 /ct-cache-list             show URL cache directory
 /ct-cache-refresh <path>   refresh cached URL sources for target
+/ct-toggle on|off          toggle entire Context Tree extension runtime
 /ct-tui on|off             toggle Context Tree widget
-/ct-new <path> [prompt]    create new Pi session seeded with session:spawn bundle
+/ct-init [--resume]        initialize editable Context Tree config
+/ct-init-review <proposal> review agent proposal inside current init flow
 /ct-subagent <path> <task> planned subagent handoff via subagent:spawn
 ```
 
@@ -262,6 +264,7 @@ Context Tree commands use `/ct-*` for discoverability:
 - Prefer `mode: { "type": "ref" }` for broad docs.
 - Use `inline`, `sections`, `markers`, `lines`, or `segments` for invariants needed before edit/write.
 - Keep `session:start` deliberate: inline core startup docs only when always useful.
+- Keep user-global `~/.pi/CONTEXT.json` config small, reference-first, and portable across repositories.
 - Put domain rules near domain scope.
 - Use exclusions for tests/generated files.
 - Do not inject `AGENTS.md`; Pi already loads it.

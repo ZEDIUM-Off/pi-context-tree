@@ -1,3 +1,4 @@
+import type { ExtensionContextLike } from "../../pi/types.js";
 import type { GeneratedContextFile, InitSession } from "../types.js";
 import { showProposalTable } from "./proposal-table.js";
 
@@ -9,7 +10,7 @@ export type PolishReviewAction =
 	| "cancel";
 
 export async function reviewPolishPhase(
-	ctx: any,
+	ctx: ExtensionContextLike,
 	session: InitSession,
 ): Promise<PolishReviewAction> {
 	while (true) {
@@ -42,7 +43,7 @@ export async function reviewPolishPhase(
 }
 
 async function editGeneratedFile(
-	ctx: any,
+	ctx: ExtensionContextLike,
 	file: GeneratedContextFile | undefined,
 ): Promise<void> {
 	if (!file) return;

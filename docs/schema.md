@@ -45,6 +45,14 @@ hook + optional target path
 
 Scope is implicit: `dirname(CONTEXT.json)`.
 
+A user-global config can also be placed at:
+
+```text
+~/.pi/CONTEXT.json
+```
+
+It is loaded before project scopes for every repository. Its file sources resolve relative to that global config directory. Path-aware `match[]` patterns are evaluated against the target path relative to the current repository root. Set `PI_CONTEXT_TREE_GLOBAL=/path/to/CONTEXT.json` to override the default location, including in tests.
+
 ## stability
 
 `stability` is a top-level scope signal for AI-assisted editing. It tells agents whether code under this scope is trusted reference, stable working code, active work, prototype, deprecated, or generated. It is not an edit policy engine; detailed rules still belong in hook-injected `.md` files.

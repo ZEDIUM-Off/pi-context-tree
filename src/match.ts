@@ -23,10 +23,10 @@ export function hookMatches(hook: HookName, current: HookName): boolean {
 }
 
 export function operationMatches(
-	operations: HookName[],
-	operation: HookName,
+	operations: readonly HookName[],
+	current: HookName,
 ): boolean {
-	return operations.includes(operation);
+	return operations.includes(current);
 }
 
 export function matchGlobs(patterns: string[], relativePath: string): boolean {

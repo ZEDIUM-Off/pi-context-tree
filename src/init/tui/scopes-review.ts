@@ -1,3 +1,4 @@
+import type { ExtensionContextLike } from "../../pi/types.js";
 import { stabilityStateSchema } from "../../schema.js";
 import type { InitSession } from "../types.js";
 import { standardReviewActions } from "./actions.js";
@@ -11,7 +12,7 @@ import { showProposalTable } from "./proposal-table.js";
 export type ScopesReviewAction = StandardReviewAction;
 
 export async function reviewScopesPhase(
-	ctx: any,
+	ctx: ExtensionContextLike,
 	session: InitSession,
 ): Promise<ScopesReviewAction> {
 	while (true) {
@@ -44,7 +45,7 @@ export async function reviewScopesPhase(
 }
 
 async function editScope(
-	ctx: any,
+	ctx: ExtensionContextLike,
 	session: InitSession,
 	index: number,
 ): Promise<void> {
@@ -68,7 +69,7 @@ async function editScope(
 			"Stability",
 			stabilityStateSchema.options,
 		);
-		if (next) scope.stability.state = next;
+		if (next) scope.stability.state = stabilityStateSchema.parse(next);
 		return;
 	}
 	if (choice === "Edit stability summary") {

@@ -80,7 +80,7 @@ Behavior implemented:
 - `agent:start`: pathless hook selected by scope when prompt references paths such as `@src/index.ts`.
 - `tool:read`: appends context bundle to read tool results.
 - `tool:edit` / `tool:write`: preflight injects context once, blocks initial mutation, then allows retry.
-- `session:spawn`: used by `/ct-new <path> [prompt]`.
+- `session:spawn`: schema/config concept for future config-driven session workflows; no slash command currently consumes it.
 - `subagent:spawn`: schema/config concept; runner interop still planned.
 
 ## Design principles
@@ -119,7 +119,6 @@ Implemented commands:
 /ct-cache-list
 /ct-cache-refresh <path>
 /ct-tui on|off
-/ct-new <path> [prompt]
 /ct-subagent <path> <task>
 ```
 

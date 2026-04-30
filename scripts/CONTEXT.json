@@ -9,24 +9,16 @@
 	"hooks": [
 		{
 			"on": "agent:start",
-			"inject": [
-				"../src/context-schema.ts"
-			]
+			"inject": ["../src/context-schema.ts"]
 		},
 		{
 			"on": "tool:read",
-			"match": [
-				"**/*.ts"
-			],
-			"inject": [
-				"../src/context-schema.ts"
-			]
+			"match": ["**/*.ts"],
+			"inject": ["../src/context-schema.ts"]
 		},
 		{
 			"on": "tool:edit",
-			"match": [
-				"**/*.ts"
-			],
+			"match": ["**/*.ts"],
 			"inject": [
 				{
 					"type": "file",
@@ -41,9 +33,7 @@
 		},
 		{
 			"on": "tool:write",
-			"match": [
-				"**/*.ts"
-			],
+			"match": ["**/*.ts"],
 			"inject": [
 				{
 					"type": "file",

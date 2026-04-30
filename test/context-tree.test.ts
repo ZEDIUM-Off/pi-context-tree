@@ -13,11 +13,17 @@ import {
 	extractLines,
 	extractMarker,
 	extractSection,
+	hookMatches,
 	matchGlobs,
-	operationMatches,
 	parsePromptPaths,
+	scanAllContextTree,
 	scanContextParents,
 } from "../src/context-tree.js";
+
+process.env.PI_CONTEXT_TREE_GLOBAL = join(
+	tmpdir(),
+	"context-tree-test-no-global-CONTEXT.json",
+);
 
 function tempRepo() {
 	return mkdtempSync(join(tmpdir(), "context-tree-"));
@@ -81,8 +87,8 @@ test("match globs support positive and ! exclusions", () => {
 });
 
 test("hooks match exactly", () => {
-	assert.equal(operationMatches(["tool:write"], "tool:write"), true);
-	assert.equal(operationMatches(["tool:read"], "tool:write"), false);
+	assert.equal(hookMatches("tool:write", "tool:write"), true);
+	assert.equal(hookMatches("tool:read", "tool:write"), false);
 });
 
 test("scan and explain use implicit scope and relative matching", async () => {
@@ -129,6 +135,43 @@ test("scan and explain use implicit scope and relative matching", async () => {
 	);
 	assert.equal(explained.matched.length, 2);
 	assert.equal(explained.sources.length, 2);
+});
+
+test("scan includes user-global CONTEXT before project scopes", async () => {
+	const repo = tempRepo();
+	const globalDir = tempRepo();
+	const previous = process.env.PI_CONTEXT_TREE_GLOBAL;
+	process.env.PI_CONTEXT_TREE_GLOBAL = join(globalDir, "CONTEXT.json");
+	try {
+		await writeFile(
+			join(globalDir, "CONTEXT.json"),
+			JSON.stringify({
+				$schema: "./schemas/context.schema.json",
+				hooks: [
+					{
+						on: "tool:read",
+						match: ["**/*.ts"],
+						inject: [
+							{ type: "file", path: "./global.md", mode: { type: "inline" } },
+						],
+					},
+				],
+			}),
+		);
+		await writeFile(join(globalDir, "global.md"), "global rules");
+		await writeFile(join(repo, "x.ts"), "x");
+		const scopes = await scanContextParents(repo, "x.ts");
+		assert.equal(scopes[0]?.global, true);
+		assert.equal(scopes[0]?.basePath, "<global>");
+		const exp = explainPath(repo, scopes, "x.ts", "tool:read");
+		const bundle = await buildBundle(repo, exp);
+		assert.equal(bundle.sources[0]?.content, "global rules");
+		const all = await scanAllContextTree(repo);
+		assert.equal(all.scopes[0]?.global, true);
+	} finally {
+		if (previous === undefined) delete process.env.PI_CONTEXT_TREE_GLOBAL;
+		else process.env.PI_CONTEXT_TREE_GLOBAL = previous;
+	}
 });
 
 test("bundle includes nearest scope stability", async () => {

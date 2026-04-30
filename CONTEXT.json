@@ -70,26 +70,16 @@
 		},
 		{
 			"on": "agent:start",
-			"inject": [
-				"./src/context-schema.ts"
-			]
+			"inject": ["./src/context-schema.ts"]
 		},
 		{
 			"on": "tool:read",
-			"match": [
-				"CONTEXT.json",
-				"**/CONTEXT.json"
-			],
-			"inject": [
-				"./src/context-schema.ts"
-			]
+			"match": ["CONTEXT.json", "**/CONTEXT.json"],
+			"inject": ["./src/context-schema.ts"]
 		},
 		{
 			"on": "tool:edit",
-			"match": [
-				"CONTEXT.json",
-				"**/CONTEXT.json"
-			],
+			"match": ["CONTEXT.json", "**/CONTEXT.json"],
 			"inject": [
 				{
 					"type": "file",
@@ -104,10 +94,7 @@
 		},
 		{
 			"on": "tool:write",
-			"match": [
-				"CONTEXT.json",
-				"**/CONTEXT.json"
-			],
+			"match": ["CONTEXT.json", "**/CONTEXT.json"],
 			"inject": [
 				{
 					"type": "file",

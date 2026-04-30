@@ -14,7 +14,7 @@ hook + optional target path
 → matching hooks[] entries
 → mode-specific inline excerpts or references
 → bounded context bundle
-→ Pi turn, read result, edit preflight, or scoped session
+→ Pi turn, read result, or edit preflight
 ```
 
 ## Current status
@@ -27,13 +27,13 @@ Implemented MVP:
 - hook/match compatibility validation: path-aware hooks require `match[]`, pathless hooks forbid it;
 - hooks: `session:start`, `agent:start`, `tool:*`, `session:spawn`, `subagent:spawn`;
 - file and URL inject sources;
+- user-global injection config via `~/.pi/CONTEXT.json` or `PI_CONTEXT_TREE_GLOBAL`;
 - URL cache under `.pi/context-tree/cache/urls`;
 - markdown section extraction, line ranges, markers, and annotated segments;
 - bundle hashing and dedupe;
 - read-result context injection;
 - edit/write preflight injection;
 - self-read skip to avoid reinjecting the file being read;
-- scoped session command;
 - scope guard fallback;
 - structured TUI status/widget;
 - unit tests for schema, matching, extraction, cache, bundles, permissions.
@@ -46,7 +46,7 @@ Minimal example:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.2.0/schemas/context.schema.json",
+  "$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.2.2/schemas/context.schema.json",
   "hooks": [
     {
       "on": "tool:read",
@@ -103,7 +103,6 @@ See [`docs/schema.md`](docs/schema.md) for full schema field behavior and best p
 /ct-tui on|off             toggle Context Tree widget display only
 /ct-init [--resume]        initialize editable Context Tree config for current codebase
 /ct-init-review <proposal> review agent proposal inside current init flow
-/ct-new <path> [prompt]    create new Pi session seeded with session:spawn bundle
 /ct-subagent <path> <task> planned subagent handoff via subagent:spawn
 ```
 
@@ -145,6 +144,16 @@ Disable extension runtime:
 ```text
 /ct-toggle off
 ```
+
+## Global config
+
+Context Tree also loads an optional user-global config before project scopes:
+
+```text
+~/.pi/CONTEXT.json
+```
+
+Set `PI_CONTEXT_TREE_GLOBAL=/path/to/CONTEXT.json` to override the location. File sources in the global config resolve relative to the global config file; path-aware matches are evaluated against repository-relative target paths.
 
 ## Changelog
 
@@ -219,7 +228,7 @@ For a Git URL, this clones or fast-forwards the target repository under `.test-w
 
 This repo uses Context Tree to develop itself:
 
-- root `CONTEXT.json` injects README only for scoped session context;
+- root `CONTEXT.json` injects README and package metadata at session startup;
 - `src/CONTEXT.json` injects Pi docs for extension runtime files and implementation-plan sections for core files;
 - `scripts/CONTEXT.json` injects the canonical schema for schema generation;
 - `test/CONTEXT.json` injects test strategy sections.
