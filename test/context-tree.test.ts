@@ -18,6 +18,8 @@ import {
 	hookMatches,
 	matchGlobs,
 	matchScopedPatterns,
+	matchScopedEntries,
+	parsePromptFileReferences,
 	parsePromptPaths,
 	scanAllContextTree,
 	scanContextParents,
@@ -195,6 +197,37 @@ test("hooks match exactly", () => {
 	assert.equal(hookMatches("tool:read", "tool:write"), false);
 });
 
+test("scoped entries support files plus grep matches", async () => {
+	const repo = tempRepo();
+	await mkdir(join(repo, "src"), { recursive: true });
+	const target = join(repo, "src/App.tsx");
+	await writeFile(target, "import { useEffect } from 'react';\nuseEffect(() => {});\n");
+	const result = await matchScopedEntries({
+		entries: [{ files: "**/*.tsx", grep: "\\buseEffect\\(" }],
+		relativeToScope: "src/App.tsx",
+		relativeToRoot: "src/App.tsx",
+		absoluteTarget: target,
+		grepBackend: "js",
+	});
+	assert.equal(result.matched, true);
+	assert.equal(result.contentAware, true);
+});
+
+test("scoped entries exclude negative grep matches", async () => {
+	const repo = tempRepo();
+	await mkdir(join(repo, "src"), { recursive: true });
+	const target = join(repo, "src/App.tsx");
+	await writeFile(target, "useEffect(specialCase);\n");
+	const result = await matchScopedEntries({
+		entries: [{ files: "**/*.tsx", grep: ["useEffect\\(", "!useEffect\\(specialCase"] }],
+		relativeToScope: "src/App.tsx",
+		relativeToRoot: "src/App.tsx",
+		absoluteTarget: target,
+		grepBackend: "js",
+	});
+	assert.equal(result.matched, false);
+});
+
 test("scoped patterns support @ root escape", () => {
 	assert.equal(
 		matchScopedPatterns({
@@ -258,10 +291,10 @@ test("new injection rules resolve runtime and path-aware sources with overrides"
 	await writeFile(join(repo, "jobs.md"), "# Scheduled jobs\nbody");
 	await writeFile(join(repo, "nfc-bo/src/jobs/sync.ts"), "code");
 	const scopes = await scanContextParents(repo, "nfc-bo/src/jobs/sync.ts");
-	const readExp = explainPath(repo, scopes, "nfc-bo/src/jobs/sync.ts", "tool:read");
+	const readExp = await explainPath(repo, scopes, "nfc-bo/src/jobs/sync.ts", "tool:read");
 	assert.equal(readExp.sources[0]?.mode.type, "ref");
 	assert.equal(readExp.sources[0]?.reason, "Jobs docs for this path.");
-	const editExp = explainPath(repo, scopes, "nfc-bo/src/jobs/sync.ts", "tool:edit");
+	const editExp = await explainPath(repo, scopes, "nfc-bo/src/jobs/sync.ts", "tool:edit");
 	assert.equal(editExp.sources[0]?.mode.type, "sections");
 	const runtimeExp = explainHook(repo, scopes, "agent:start");
 	assert.equal(runtimeExp.sources[0]?.type, "url");
@@ -295,7 +328,7 @@ test("scan and explain use implicit scope and relative matching", async () => {
 	);
 	assert.equal(scopes.length, 2);
 	assert.equal(scopes[1]?.basePath, "src/features/billing");
-	const explained = explainPath(
+	const explained = await explainPath(
 		repo,
 		scopes,
 		"src/features/billing/invoice.ts",
@@ -324,7 +357,7 @@ test("scan includes user-global CONTEXT before project scopes", async () => {
 		const scopes = await scanContextParents(repo, "x.ts");
 		assert.equal(scopes[0]?.global, true);
 		assert.equal(scopes[0]?.basePath, "<global>");
-		const exp = explainPath(repo, scopes, "x.ts", "tool:read");
+		const exp = await explainPath(repo, scopes, "x.ts", "tool:read");
 		const bundle = await buildBundle(repo, exp);
 		assert.equal(bundle.sources[0]?.content, "global rules");
 		const all = await scanAllContextTree(repo);
@@ -363,7 +396,7 @@ test("bundle includes nearest scope stability", async () => {
 	);
 	await writeFile(join(repo, "src/feature/a.ts"), "code");
 	const scopes = await scanContextParents(repo, "src/feature/a.ts");
-	const exp = explainPath(repo, scopes, "src/feature/a.ts", "agent:start");
+	const exp = await explainPath(repo, scopes, "src/feature/a.ts", "agent:start");
 	const bundle = await buildBundle(repo, exp);
 	assert.equal(bundle.stability?.config.state, "in_progress");
 	assert.equal(bundle.stability?.scope.basePath, "src/feature");
@@ -415,7 +448,7 @@ test("bundle loads local files and hashes content", async () => {
 	await writeFile(join(repo, "rules.md"), "# Rules");
 	await writeFile(join(repo, "x.ts"), "x");
 	const scopes = await scanContextParents(repo, "x.ts");
-	const exp = explainPath(repo, scopes, "x.ts", "agent:start");
+	const exp = await explainPath(repo, scopes, "x.ts", "agent:start");
 	const bundle = await buildBundle(repo, exp);
 	assert.equal(bundle.sources.length, 1);
 	assert.match(bundle.bundleHash, /^[a-f0-9]{64}$/);
@@ -433,7 +466,7 @@ test("url cache uses mock fetch and then fresh cache", async () => {
 	);
 	await writeFile(join(repo, "x.ts"), "x");
 	const scopes = await scanContextParents(repo, "x.ts");
-	const exp = explainPath(repo, scopes, "x.ts", "agent:start");
+	const exp = await explainPath(repo, scopes, "x.ts", "agent:start");
 	let calls = 0;
 	const fetcher = async () => {
 		calls++;
@@ -450,11 +483,11 @@ test("url cache uses mock fetch and then fresh cache", async () => {
 	assert.equal(calls, 1);
 });
 
-test("parse prompt paths extracts @file and plain paths", () => {
-	assert.deepEqual(parsePromptPaths("Fix @src/a.ts and src/b.test.ts"), [
-		"src/a.ts",
-		"src/b.test.ts",
-	]);
+test("parse prompt file references extracts only explicit @files", () => {
+	assert.deepEqual(parsePromptPaths("Fix @src/a.ts and src/b.test.ts"), ["src/a.ts"]);
+	assert.deepEqual(parsePromptPaths("Ignore directory @src/ for now"), []);
+	assert.deepEqual(parsePromptPaths("Trim punctuation @CHANGELOG.md."), ["CHANGELOG.md"]);
+	assert.deepEqual(parsePromptFileReferences("Compare @src/a.ts and @test/a.test.ts").map((ref) => ref.raw), ["@src/a.ts", "@test/a.test.ts"]);
 });
 
 test("read bundle skips self-injected target file", async () => {
@@ -473,7 +506,7 @@ test("read bundle skips self-injected target file", async () => {
 	await writeFile(join(repo, "README.md"), "readme");
 	await writeFile(join(repo, "rules.md"), "rules");
 	const scopes = await scanContextParents(repo, "README.md");
-	const exp = explainPath(repo, scopes, "README.md", "tool:read");
+	const exp = await explainPath(repo, scopes, "README.md", "tool:read");
 	const bundle = await buildBundle(repo, exp);
 	assert.deepEqual(
 		bundle.sources.map((s) => s.sourceId),

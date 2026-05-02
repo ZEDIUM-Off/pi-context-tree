@@ -10,3 +10,4 @@ coverage/
 context.md
 *.tgz
 .test-workspaces/
+.agents/plans

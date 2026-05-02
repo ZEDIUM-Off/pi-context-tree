@@ -1,0 +1,34 @@
+{
+	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.4.0/schemas/context.schema.json",
+	"stability": {
+		"state": "canonical",
+		"summary": "Pi lifecycle/tool-hook integration, active stack updates, prompt @file handling, edit protocol, and runtime state.",
+		"updatedAt": "2026-05-02",
+		"updatedBy": "agent"
+	},
+	"sources": {
+		"piExtensions": {
+			"type": "url",
+			"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md",
+			"kind": "pi-doc",
+			"reason": "Pi event lifecycle, input, context, tools, commands, and registered tool APIs",
+			"mode": { "type": "sections", "names": ["Lifecycle Overview", "Agent Events", "Tool Events", "ExtensionAPI Methods"] }
+		},
+		"runtimeRegistry": {
+			"type": "file",
+			"path": "../../docs/runtime-source-registry.md",
+			"kind": "architecture",
+			"reason": "Active stack runtime direction and edit protocol intent",
+			"mode": { "type": "sections", "names": ["Pi runtime direction", "Active injection stack", "Batch resolution"] }
+		}
+	},
+	"injection_rules": [
+		{
+			"match": ["**/*.ts"],
+			"inject": [
+				{ "source": "runtimeRegistry", "on": "tool:read" },
+				{ "source": "piExtensions", "on": ["tool:edit", "tool:write"] }
+			]
+		}
+	]
+}

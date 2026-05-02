@@ -1,0 +1,35 @@
+{
+	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.4.0/schemas/context.schema.json",
+	"stability": {
+		"state": "stable",
+		"summary": "Compatibility bundle path: explain, build, render, prompt refs, and stability helpers.",
+		"updatedAt": "2026-05-02",
+		"updatedBy": "agent"
+	},
+	"sources": {
+		"implementation": {
+			"type": "file",
+			"path": "../../docs/implementation.md",
+			"kind": "reference",
+			"reason": "Legacy bundle compatibility behavior and resolver expectations",
+			"mode": { "type": "sections", "names": ["Resolution of scopes", "Matching", "Rule resolution", "Runtime behavior", "Tests unitaires et déterminisme"] }
+		},
+		"runtimeRegistry": {
+			"type": "file",
+			"path": "../../docs/runtime-source-registry.md",
+			"kind": "architecture",
+			"reason": "Compatibility relationship between bundle API and active-stack runtime",
+			"mode": { "type": "sections", "names": ["Pipeline", "Pi runtime direction"] }
+		}
+	},
+	"injection_rules": [
+		{
+			"match": ["**/*.ts"],
+			"inject": [
+				{ "source": "implementation", "on": "tool:read" },
+				{ "source": "runtimeRegistry", "on": "tool:read" },
+				{ "source": "implementation", "on": ["tool:edit", "tool:write"] }
+			]
+		}
+	]
+}

@@ -1,0 +1,38 @@
+{
+	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.4.0/schemas/context.schema.json",
+	"stability": {
+		"state": "canonical",
+		"summary": "Active-stack runtime source registry, batch resolution, conflict policy, provider extraction, and context rendering.",
+		"updatedAt": "2026-05-02",
+		"updatedBy": "agent"
+	},
+	"sources": {
+		"runtimeRegistry": {
+			"type": "file",
+			"path": "../../docs/runtime-source-registry.md",
+			"kind": "architecture",
+			"reason": "Canonical runtime source registry and active-stack architecture",
+			"mode": {
+				"type": "sections",
+				"names": ["Pipeline", "Resources", "Injection params", "Batch resolution", "Conflict policy", "Active injection stack", "Provider model"]
+			}
+		},
+		"implementation": {
+			"type": "file",
+			"path": "../../docs/implementation.md",
+			"kind": "reference",
+			"reason": "Runtime behavior and deterministic test expectations",
+			"mode": { "type": "sections", "names": ["Runtime behavior", "Tests unitaires et déterminisme"] }
+		}
+	},
+	"injection_rules": [
+		{
+			"match": ["**/*.ts"],
+			"inject": [
+				{ "source": "runtimeRegistry", "on": "tool:read" },
+				{ "source": "implementation", "on": "tool:read" },
+				{ "source": "runtimeRegistry", "on": ["tool:edit", "tool:write"] }
+			]
+		}
+	]
+}

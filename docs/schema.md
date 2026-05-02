@@ -90,6 +90,89 @@ Runtime example:
 }
 ```
 
+## Hook timing and Pi event mapping
+
+Context Tree hook names are config-level injection moments. They map to Pi runtime events, but they are not all interchangeable.
+
+```text
+Pi session_start
+→ Context Tree session:start
+→ active stack is updated once for session-level context
+
+User input
+→ Pi input                 raw prompt, before @file/template/skill expansion
+→ Context Tree captures explicit @file references here
+→ Pi before_agent_start    expanded prompt, once per user prompt
+→ Context Tree agent:start pathless runtime rules
+→ Context Tree synthetic tool:read for each explicit @file reference
+→ Pi context               active stack is rendered for the next LLM call
+
+Assistant tool call
+→ Pi tool_call             preflight, can block edit/write
+→ Context Tree tool:<name> updates active stack before execution
+→ Pi tool_result           after execution; read results stay clean
+→ Context Tree tool:read updates active stack for the next LLM call
+→ Pi context               active stack is rendered again if another LLM call follows
+```
+
+### `session:start`
+
+Use `session:start` for small, session-wide orientation that should be available after startup, reload, resume, new session, or fork. It is pathless and does not mean “before every prompt”. Prefer `ref` mode or small summaries.
+
+Good uses:
+
+- project README as `ref`;
+- package metadata as `ref`;
+- global rules that should apply for the whole session.
+
+Avoid:
+
+- large inline docs;
+- path-specific implementation docs;
+- anything that should only appear when a matching file is read or edited.
+
+### `agent:start`
+
+Use `agent:start` for context that should be refreshed once per user prompt after prompt expansion and before the agent loop. It is also pathless in `CONTEXT.json` rules, so it applies broadly for its loaded scope. Do not use child-scope `agent:start` as a substitute for “when a file under this folder is referenced”; use a matched `tool:read` rule for that.
+
+Good uses:
+
+- small global behavioral rules;
+- broad extension API docs when every prompt in that scope needs them;
+- reference-only orientation that is safe to see frequently.
+
+Avoid:
+
+- folder-specific implementation docs that should only load for files in that folder;
+- heavy inline content;
+- test or script rules that should only apply during read/edit of matching files.
+
+### `tool:read`
+
+Use `tool:read` for context needed when a file is inspected. It runs for actual assistant `read` tool results and for explicit user `@file` references through a synthetic read activation. Tool outputs remain clean; Context Tree updates the active stack and the Pi `context` hook renders it before the next model call.
+
+When the user writes `@src/file.ts`, Context Tree:
+
+1. captures the raw `@file` token from Pi `input`;
+2. ignores directories such as `@src/` and paths that do not exist;
+3. injects the referenced file itself inline as an explicit prompt-file source;
+4. resolves matching `tool:read` injection rules for that file;
+5. skips configured injections whose source file is also one of the explicit prompt targets.
+
+Plain path mentions such as `src/file.ts` do not trigger prompt-reference behavior.
+
+### `tool:edit` and `tool:write`
+
+Use `tool:edit` and `tool:write` for mutation guardrails. Context Tree updates edit/write context during tool preflight. Direct edit/write calls may be blocked once so the updated active stack is available on retry. The `ct_edit_request` / `ct_patch` protocol is preferred for Context Tree-gated edits.
+
+### `tool:grep`, `tool:find`, `tool:ls`, and `tool:bash`
+
+Use these only when a search/list/shell operation needs path-scoped context. Keep matches narrow; broad rules on these hooks can be noisy because agents may search widely.
+
+### Spawn hooks
+
+`session:spawn` and `subagent:spawn` are schema/config hooks for planned workflow and subagent interop. They are path-aware in the schema but are not the normal way to influence a current prompt.
+
 ## on selectors
 
 Each injection item owns its `on` selector. Supported forms:

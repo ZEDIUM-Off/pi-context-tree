@@ -6,7 +6,11 @@ import { runInitWizard, submitInitPhase } from "../init/wizard.js";
 import type { ExtensionContextLike } from "../pi/types.js";
 import { scanAllContextTree, scanContextParents } from "../scan.js";
 import type { HookName } from "../schema.js";
+import { appendActiveContextMessage } from "../runtime-context/context-renderer.js";
+import { buildInjectionParamsRegistry } from "../runtime-context/injection-params-registry.js";
+import { buildResourceRegistry } from "../runtime-context/resource-registry.js";
 import { showDetailPanel, summarizeSession, type TuiApi } from "../tui.js";
+import { registerEditProtocolTools } from "./edit-protocol.js";
 import { phaseSubmitParameters } from "./init-tool-schema.js";
 import { registerLifecycleHandlers } from "./lifecycle.js";
 import {
@@ -24,12 +28,14 @@ const contextTree = (pi: ExtensionAPI) => {
 		const result = await scanAllContextTree(cwd);
 		state.scopes = result.scopes;
 		state.scanErrors = result.errors;
+		state.resources = buildResourceRegistry(result.scopes, cwd);
+		state.injectionParams = buildInjectionParamsRegistry(result.scopes, cwd);
 		return state.scopes;
 	}
 
 	async function resolveAndRender(cwd: string, target: string, hook: HookName) {
 		const targetScopes = await scanContextParents(cwd, target);
-		const explain = explainPath(cwd, targetScopes, target, hook);
+		const explain = await explainPath(cwd, targetScopes, target, hook);
 		const bundle = await buildBundle(cwd, explain);
 		return { explain, bundle, rendered: renderBundle(bundle) };
 	}
@@ -62,6 +68,20 @@ const contextTree = (pi: ExtensionAPI) => {
 		maybeTrackBranch,
 	});
 
+	pi.on("context", async (event, ctx) => {
+		if (!state.extensionEnabled) return undefined;
+		state.currentCwd = ctx.cwd;
+		const latestWarnings = state.resolutionHistory.at(0)?.warnings;
+		const messages = await appendActiveContextMessage({
+			messages: event.messages,
+			cwd: ctx.cwd,
+			resources: state.resources,
+			activeInjections: state.activeInjections,
+			...(latestWarnings ? { warnings: latestWarnings } : {}),
+		});
+		return { messages };
+	});
+
 	async function showDetail(ctx: ExtensionContextLike) {
 		state.currentCwd = ctx.cwd;
 		state.lastSession = summarizeSession(ctx.sessionManager);
@@ -72,6 +92,8 @@ const contextTree = (pi: ExtensionAPI) => {
 		description: "Show Context Tree injection details",
 		handler: showDetail,
 	});
+
+	registerEditProtocolTools(pi, state);
 
 	pi.registerTool({
 		name: "ct_init_submit_phase",

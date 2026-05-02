@@ -1,5 +1,5 @@
 import path from "node:path";
-import { contextId, matchScopedPatterns } from "../match.js";
+import { contextId, ruleMatchesPath } from "../match.js";
 import {
 	dedupeSources,
 	type NormalizedSource,
@@ -12,12 +12,12 @@ import { stripAtPrefix, toPosix } from "../util.js";
 import { findNearestStability } from "./stability.js";
 import type { ExplainResult } from "./types.js";
 
-export function explainPath(
+export async function explainPath(
 	cwd: string,
 	scopes: ContextScope[],
 	targetPath: string,
 	operation: HookName = "agent:start",
-): ExplainResult {
+): Promise<ExplainResult> {
 	const absoluteTarget = path.resolve(cwd, stripAtPrefix(targetPath));
 	const relativeTarget = toPosix(path.relative(cwd, absoluteTarget));
 	const matched: ExplainResult["matched"] = [];
@@ -31,14 +31,14 @@ export function explainPath(
 		if (!scope.global && relativeToScope.startsWith("..")) continue;
 		for (const [ruleIndex, rule] of scope.config.injection_rules.entries()) {
 			if (rule.match) {
-				if (
-					!matchScopedPatterns({
-						patterns: rule.match,
-						relativeToScope: relativeToScope || ".",
-						relativeToRoot: relativeTarget || ".",
-					})
-				)
-					continue;
+				const match = await ruleMatchesPath({
+					rule,
+					relativeToScope: relativeToScope || ".",
+					relativeToRoot: relativeTarget || ".",
+					absoluteTarget,
+				});
+				warnings.push(...match.warnings);
+				if (!match.matched) continue;
 			}
 			for (const [injectIndex, item] of rule.inject.entries()) {
 				const source = resolveInjectionForHook(scope, item, operation);

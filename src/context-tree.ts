@@ -54,9 +54,10 @@ export {
 
 export type { ContextScope, ScanAllResult } from "./scan.js";
 export { globalContextPath, scanAllContextTree, scanContextParents } from "./scan.js";
-export { contextId, hookMatches, matchGlobs, matchScopedPatterns, operationMatches } from "./match.js";
+export { contextId, hookMatches, matchGlobs, matchScopedEntries, matchScopedPatterns, operationMatches } from "./match.js";
 export type { NormalizedSource, ResolvedOnEntry } from "./normalize.js";
 export { dedupeSources, expandOnSelector, normalizeInject, resolveInjectionForHook } from "./normalize.js";
 export { extractContent, extractLines, extractMarker, extractSection } from "./extract.js";
 export type { Bundle, ExplainResult, LoadedSource, ScopeStability } from "./bundle.js";
-export { buildBundle, explainHook, explainPath, formatExplain, formatMode, parsePromptPaths, renderBundle } from "./bundle.js";
+export { buildBundle, explainHook, explainPath, formatExplain, formatMode, parsePromptFileReferences, parsePromptPaths, renderBundle } from "./bundle.js";
+export type { PromptFileReference } from "./bundle.js";

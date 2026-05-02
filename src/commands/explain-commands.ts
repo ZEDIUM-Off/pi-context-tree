@@ -35,7 +35,7 @@ export function registerExplainCommands({ command }: CommandGroupDeps): void {
 			ctx.ui.notify(
 				formatExplain(
 					ctx.cwd,
-					explainPath(ctx.cwd, targetScopes, target, hook),
+					await explainPath(ctx.cwd, targetScopes, target, hook),
 				),
 				"info",
 			);

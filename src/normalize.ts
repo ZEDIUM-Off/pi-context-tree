@@ -9,6 +9,7 @@ import {
 	type HookName,
 	type InjectObject,
 	type InjectionItem,
+	type MatchEntry,
 	type OnSelector,
 	type SourceDefinition,
 	type SourceOverride,
@@ -21,7 +22,7 @@ export type NormalizedSource = InjectObject & {
 	absolutePath?: string;
 	owner: ContextScope;
 	contextId: string;
-	ruleMatch?: readonly string[];
+	ruleMatch?: readonly MatchEntry[];
 	sourceKey?: string;
 	hook?: HookName;
 	cache?: CacheConfig;
@@ -78,7 +79,7 @@ export function resolveInjectionForHook(owner: ContextScope, inject: InjectionIt
 	return onEntry ? resolveObject(owner, source, inject, onEntry) : undefined;
 }
 
-export function normalizeInject(input: InjectObject, owner: ContextScope, id: string, meta?: { ruleMatch?: readonly string[]; sourceKey?: string; hook?: HookName }): NormalizedSource {
+export function normalizeInject(input: InjectObject, owner: ContextScope, id: string, meta?: { ruleMatch?: readonly MatchEntry[]; sourceKey?: string; hook?: HookName }): NormalizedSource {
 	const cache = mergeCache(owner.config.defaults?.cache, input.cache);
 	const base = { owner, contextId: id, ...(meta?.ruleMatch ? { ruleMatch: meta.ruleMatch } : {}), ...(meta?.sourceKey ? { sourceKey: meta.sourceKey } : {}), ...(meta?.hook ? { hook: meta.hook } : {}), cache };
 	if (input.type === "file") return { ...input, ...base, absolutePath: path.resolve(owner.dir, stripAtPrefix(input.path)) };

@@ -1,5 +1,5 @@
 {
-	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.3.0/schemas/context.schema.json",
+	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.4.0/schemas/context.schema.json",
 	"stability": {
 		"state": "stable",
 		"summary": "Maintenance scripts are stable support code. Keep aligned with canonical schema implementation in src/context-schema.ts.",
@@ -15,17 +15,18 @@
 			"mode": {
 				"type": "ref"
 			}
+		},
+		"releaseChecklist": {
+			"type": "file",
+			"path": "../docs/release-checklist.md",
+			"kind": "release-rules",
+			"reason": "Packaging, local dev, and schema release scripts must follow release expectations",
+			"mode": {
+				"type": "ref"
+			}
 		}
 	},
 	"injection_rules": [
-		{
-			"inject": [
-				{
-					"source": "schema",
-					"on": "agent:start"
-				}
-			]
-		},
 		{
 			"match": [
 				"**/*.ts"
@@ -33,6 +34,10 @@
 			"inject": [
 				{
 					"source": "schema",
+					"on": "tool:read"
+				},
+				{
+					"source": "releaseChecklist",
 					"on": "tool:read"
 				},
 				{

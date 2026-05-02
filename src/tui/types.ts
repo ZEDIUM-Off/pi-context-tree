@@ -1,3 +1,5 @@
+import type { ActiveInjection } from "../runtime-context/active-injection-registry.js";
+import type { ResolutionBatch } from "../runtime-context/batch-resolver.js";
 import type { Operation } from "../schema.js";
 
 export type InjectionReference = {
@@ -58,6 +60,9 @@ export type TuiState = {
 	session?: SessionSummary;
 	lastInjection?: LastInjection;
 	injectionHistory?: LastInjection[];
+	activeStack?: ActiveInjection[];
+	resolutionHistory?: ResolutionBatch[];
+	activeChanges?: ActiveInjection[];
 };
 export type TuiApi = {
 	setStatus: (key: string, value: string | undefined) => void;

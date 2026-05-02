@@ -17,7 +17,31 @@ export function renderDetailLines(
 		`session: ${state.session ? `${state.session.mode} depth ${state.session.branchDepth}/${state.session.entryCount} leaf ${short(state.session.leafId ?? "none")}` : "unknown"}`,
 		"",
 	];
-	if (last) {
+	const activeStack = state.activeStack ?? [];
+	const latestResolution = state.resolutionHistory?.[0];
+	if (activeStack.length) {
+		lines.push(
+			`Active stack: ${activeStack.length} resources`,
+			...section("Active stack", activeStack.slice().reverse().map((entry) => [
+				entry.action,
+				`${entry.param.resourceKey} mode=${entry.param.mode.type} hook=${entry.lastHook} trigger=${entry.trace.trigger}${entry.trace.promptReference ? ` ref=${entry.trace.promptReference}` : ""} targets=${entry.lastTargets.join(",") || "-"}`,
+			])),
+		);
+		if (latestResolution)
+			lines.push(
+				...section("Latest resolution", [
+					["invocations", String(latestResolution.invocations.length)],
+					["candidates", String(latestResolution.candidates.length)],
+					["selected", String(latestResolution.selected.length)],
+					["conflicts", String(latestResolution.conflicts.length)],
+					["skipped", String(latestResolution.skipped.length)],
+				]),
+			);
+		if (latestResolution?.conflicts.length)
+			lines.push("", "Conflicts", ...latestResolution.conflicts.map((conflict) => `! winner=${conflict.winner.paramId} resource=${conflict.resourceKey} dropped=${conflict.dropped.map((item) => item.paramId).join(",")} reason=${conflict.reason}`));
+		if (latestResolution?.skipped.length)
+			lines.push("", "Skipped", ...latestResolution.skipped.map((skip) => `! ${skip.resourceKey}: ${skip.reason}`));
+	} else if (last) {
 		lines.push(
 			`References: ${last.sourceCount} (${last.fileCount} files, ${last.urlCount} urls)`,
 			...section("Last injection", [
@@ -130,6 +154,8 @@ export function colorDetailLine(line: string, c: PanelColors): string {
 			"Warnings",
 			"Invalid scopes",
 			"Injection stack",
+			"Conflicts",
+			"Skipped",
 		].some((h) => line.startsWith(h))
 	)
 		return c.title(line);

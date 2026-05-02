@@ -8,8 +8,9 @@ event hook + optional target path
 → ordered injection_rules[]
 → matching inject[].on selectors
 → resolved sources with overrides
-→ rendered bundle
-→ Pi injection point
+→ runtime injection params
+→ active injection stack
+→ Pi context hook rendering
 ```
 
 ## Schema target
@@ -75,17 +76,29 @@ internal defaults
 
 ## Runtime behavior
 
-- `session:start`: resolves runtime rules and stores startup context for the first agent turn.
-- `agent:start`: resolves runtime rules and prompt-mentioned path contexts.
-- `tool:read`: appends rendered bundle to read results.
-- `tool:edit` / `tool:write`: preflight injects context once, blocks initial mutation, then allows retry.
-- Scope guard still applies after context preflight checks.
+Active-stack runtime path:
+
+- Config scopes compile into a resource registry keyed by canonical file path or URL.
+- Rule inject items compile into hook-specific runtime injection params with full provenance and merged overrides.
+- `session:start`, `agent:start`, and `tool:*` invocations update the active injection registry.
+- One or more hook invocations resolve as a batch; same-file targets are skipped as context and same-resource conflicts are resolved deterministically.
+- The active injection registry keeps at most one representation per resource and records whether each invocation inserted, moved, or replaced it.
+- Pi's `context` hook renders one canonical Context Tree active-stack message marked with `context-tree:active-stack` comments.
+- Context injection no longer appends bundles to tool outputs; legacy `# Context Tree Bundle` blocks are stripped best-effort from older sessions.
+- `ct_edit_request` and `ct_patch` are edit tools, not context-injection carriers: they intentionally return visible tool results. `ct_patch` returns a compact line-count summary plus focused unified diff for the agent and exposes the same details to custom TUI rendering.
+- `tool:edit` / `tool:write` direct calls update active context and use a retry gate. When a Context Tree edit session is active, direct edit/write calls are blocked in favor of `ct_patch`.
+- Scope guard still applies after context updates.
+
+Compatibility path:
+
+- `buildBundle` / `renderBundle` remain available for commands and public API compatibility.
+- Runtime model context no longer depends on appending those rendered bundles to system prompts or tool results.
 
 ## Commands
 
 ```text
-/ct-status                 show scan status and last injection summary
-/ct-detail                 show detailed last injection references
+/ct-status                 show scan status and active stack summary
+/ct-detail                 show active stack, resolution history, conflicts, skips, and references
 /ct-validate               validate configs and list valid/invalid paths
 /ct-explain <path> [hook]  explain matched injection rules and sources
 /ct-fetch <path>           compile bundle and fetch/cache inline URLs
@@ -115,4 +128,4 @@ Cover:
 - ref sources render load commands;
 - read self-injection is skipped;
 - URL cache uses mock fetch only;
-- command/TUI summaries use source/rule counts.
+- command/TUI summaries expose active stack counts, resolution diagnostics, conflicts, skips, and source/rule provenance.

@@ -1,0 +1,35 @@
+{
+	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.4.0/schemas/context.schema.json",
+	"stability": {
+		"state": "in_progress",
+		"summary": "Interactive Context Tree init wizard, phase schemas, TUI review screens, and generated config proposals.",
+		"updatedAt": "2026-05-02",
+		"updatedBy": "agent"
+	},
+	"sources": {
+		"schemaDoc": {
+			"type": "file",
+			"path": "../../docs/schema.md",
+			"kind": "schema-doc",
+			"reason": "Human schema reference used by generated configs and review UI",
+			"mode": { "type": "sections", "names": ["sources", "injection_rules", "Hook timing and Pi event mapping", "on selectors", "Runtime/path-aware validation", "Match semantics", "Modes", "Best practices"] }
+		},
+		"schema": {
+			"type": "file",
+			"path": "../context-schema.ts",
+			"kind": "schema",
+			"reason": "Canonical config schema exported for init phase validation",
+			"mode": { "type": "ref" }
+		}
+	},
+	"injection_rules": [
+		{
+			"match": ["**/*.ts"],
+			"inject": [
+				{ "source": "schemaDoc", "on": "tool:read" },
+				{ "source": "schema", "on": "tool:read" },
+				{ "source": "schemaDoc", "on": ["tool:edit", "tool:write"] }
+			]
+		}
+	]
+}

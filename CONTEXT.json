@@ -1,5 +1,5 @@
 {
-	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.3.0/schemas/context.schema.json",
+	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.4.0/schemas/context.schema.json",
 	"stability": {
 		"state": "stable",
 		"summary": "Repository-wide extension configuration and docs are usable baseline; prefer narrower child scope stability when present.",
@@ -31,9 +31,9 @@
 			"type": "file",
 			"path": "./README.md",
 			"kind": "overview",
-			"reason": "Project overview; load only when task needs broad orientation",
+			"reason": "Project overview; load on demand for broad orientation",
 			"mode": {
-				"type": "inline"
+				"type": "ref"
 			}
 		},
 		"package": {
@@ -42,7 +42,19 @@
 			"kind": "package-metadata",
 			"reason": "TypeScript package metadata: scripts, dependencies, Pi extension entrypoint",
 			"mode": {
-				"type": "inline"
+				"type": "ref"
+			}
+		},
+		"releaseChecklist": {
+			"type": "file",
+			"path": "./docs/release-checklist.md",
+			"kind": "release-rules",
+			"reason": "Release and changelog maintenance rules",
+			"mode": {
+				"type": "sections",
+				"names": [
+					"Changelog and GitHub releases"
+				]
 			}
 		}
 	},
@@ -82,6 +94,17 @@
 					"mode": {
 						"type": "inline"
 					}
+				}
+			]
+		},
+		{
+			"match": [
+				"CHANGELOG.md"
+			],
+			"inject": [
+				{
+					"source": "releaseChecklist",
+					"on": "tool:read"
 				}
 			]
 		}

@@ -47,7 +47,7 @@ Minimal example:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.3.0/schemas/context.schema.json",
+  "$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.4.0/schemas/context.schema.json",
   "sources": {
     "domainRules": { "type": "file", "path": "./docs/domain-rules.md" },
     "piExtensions": {
@@ -96,8 +96,8 @@ See [`docs/schema.md`](docs/schema.md) for full schema field behavior and best p
 ## Commands
 
 ```text
-/ct-status                 show scan status and last injection summary
-/ct-detail                 show detailed last injection references
+/ct-status                 show scan status and active stack summary
+/ct-detail                 show active stack, resolution history, conflicts, skips, and references
 /ct-validate [path]        validate configs and list valid/invalid paths
 /ct-explain <path> [hook]  explain matched injection rules and sources
 /ct-fetch <path>           compile bundle and fetch/cache inline URLs
@@ -112,6 +112,8 @@ See [`docs/schema.md`](docs/schema.md) for full schema field behavior and best p
 
 `subagent` is currently a planned interop point for `pi-subagents`.
 
+Context Tree also registers two model-facing edit tools: `ct_edit_request` and `ct_patch`. `ct_edit_request` authorizes an explicit target set and resolves edit/write context before mutation. `ct_patch` applies exact replacements only to authorized targets, returns an agent-readable line-count summary plus focused diff, and renders a compact TUI row with a diff preview. In Pi's default keymap, press `Ctrl+O` on the tool row to expand/collapse the full diff; use your terminal or Pi viewport scrolling for long expanded output.
+
 Init flow is human-controlled and resumable. It scans repository rules/skills, proposes line-scoped rule injections, and proposes Context7-specific doc lookups per scope. It never injects broad root documentation links automatically; use Context7 `ctx7 library <name> <query>` then `ctx7 docs <libraryId> <query> --json` to select precise chunks.
 
 ## TUI
@@ -121,14 +123,15 @@ Context Tree uses Pi's native UI APIs:
 - `setStatus()` for compact footer status;
 - `setWidget()` for a structured widget above the editor.
 
-Compact widget shows:
+Compact widget shows active-stack runtime state:
 
 ```text
 Context Tree
-✓ 4 valid · 0 invalid
-target: src/index.ts
-op: read · sources: 2 · contexts: 1
-bundle: 31b6cb906d6 · warnings: 0
+✓ 11 valid · 0 invalid
+active: 8 sources
+latest: tool:read src/runtime/state.ts
+events: 3 cand · 2 sel
+diag: 0 conflicts · 1 skipped
 ```
 
 Detailed source list stays on demand:

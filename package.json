@@ -1,6 +1,6 @@
 {
 	"name": "pi-context-tree",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"description": "Pi extension for deterministic path-scoped contextualization via CONTEXT.json files.",
 	"repository": {
 		"type": "git",

@@ -1,0 +1,35 @@
+{
+	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.4.0/schemas/context.schema.json",
+	"stability": {
+		"state": "stable",
+		"summary": "Schema-reference migration and upgrade planning utilities for CONTEXT.json files.",
+		"updatedAt": "2026-05-02",
+		"updatedBy": "agent"
+	},
+	"sources": {
+		"schemaDoc": {
+			"type": "file",
+			"path": "../../docs/schema.md",
+			"kind": "schema-doc",
+			"reason": "Target schema contract for upgrade validation",
+			"mode": { "type": "sections", "names": ["Top-level object", "sources", "injection_rules", "Runtime/path-aware validation", "Best practices"] }
+		},
+		"releaseChecklist": {
+			"type": "file",
+			"path": "../../docs/release-checklist.md",
+			"kind": "release-rules",
+			"reason": "Schema release and package publication expectations",
+			"mode": { "type": "ref" }
+		}
+	},
+	"injection_rules": [
+		{
+			"match": ["**/*.ts"],
+			"inject": [
+				{ "source": "schemaDoc", "on": "tool:read" },
+				{ "source": "releaseChecklist", "on": "tool:read" },
+				{ "source": "schemaDoc", "on": ["tool:edit", "tool:write"] }
+			]
+		}
+	]
+}

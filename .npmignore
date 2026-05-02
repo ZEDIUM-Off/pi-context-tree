@@ -12,3 +12,4 @@ coverage/
 context.md
 *.tgz
 .github/
+.agents/

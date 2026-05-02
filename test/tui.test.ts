@@ -12,6 +12,7 @@ import {
 } from "../src/context-tree.js";
 import {
 	detailText,
+	injectionLine,
 	renderTui,
 	statusText,
 	summarizeBundle,
@@ -56,7 +57,7 @@ async function buildLocalBundle() {
 		"# Rules\nline two\nline three\n",
 	);
 	const scopes = await scanContextParents(repo, "src/service.ts");
-	const explained = explainPath(repo, scopes, "src/service.ts", "tool:read");
+	const explained = await explainPath(repo, scopes, "src/service.ts", "tool:read");
 	const bundle = await buildBundle(repo, explained);
 	return { repo, bundle };
 }
@@ -75,6 +76,16 @@ test("tui summarizes injected bundle with reference counts, lines, and tokens", 
 	assert.equal(summary.references[0]?.id, "docs/rules.md");
 	assert.equal(summary.references[0]?.kind, "file");
 	assert.match(summary.references[0]?.uri ?? "", /^file:\/\//);
+});
+
+test("injection line shows hook, target, sources, modes, tokens, and bundle hash", async () => {
+	const { repo, bundle } = await buildLocalBundle();
+	const line = injectionLine(summarizeBundle(repo, bundle));
+
+	assert.match(
+		line,
+		/^\[Context Tree\] tool:read src\/service\.ts → 1 source: docs\/rules\.md:inline · ~\d+ tok · [a-f0-9]{12}$/,
+	);
 });
 
 test("tui compact widget shows injection overview without full source content", async () => {

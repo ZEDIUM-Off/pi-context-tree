@@ -1,5 +1,5 @@
 {
-	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.3.0/schemas/context.schema.json",
+	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.4.0/schemas/context.schema.json",
 	"stability": {
 		"state": "canonical",
 		"summary": "Tests define expected behavior for schema, resolver, permissions, and TUI. Use as source of truth for behavior changes.",
@@ -17,17 +17,24 @@
 					"Tests unitaires et déterminisme"
 				]
 			}
+		},
+		"runtimeRegistry": {
+			"type": "file",
+			"path": "../docs/runtime-source-registry.md",
+			"kind": "architecture",
+			"reason": "Active-stack runtime behavior covered by runtime-context tests",
+			"mode": {
+				"type": "sections",
+				"names": [
+					"Batch resolution",
+					"Conflict policy",
+					"Active injection stack",
+					"Provider model"
+				]
+			}
 		}
 	},
 	"injection_rules": [
-		{
-			"inject": [
-				{
-					"source": "implementationTests",
-					"on": "agent:start"
-				}
-			]
-		},
 		{
 			"match": [
 				"**/*.test.ts"
@@ -35,6 +42,18 @@
 			"inject": [
 				{
 					"source": "implementationTests",
+					"on": "tool:*"
+				}
+			]
+		},
+		{
+			"match": [
+				"active-context-runtime.test.ts",
+				"runtime-context-registries.test.ts"
+			],
+			"inject": [
+				{
+					"source": "runtimeRegistry",
 					"on": "tool:*"
 				}
 			]

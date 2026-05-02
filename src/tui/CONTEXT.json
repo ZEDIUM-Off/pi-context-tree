@@ -1,0 +1,35 @@
+{
+	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.4.0/schemas/context.schema.json",
+	"stability": {
+		"state": "stable",
+		"summary": "TUI summaries, detail panels, compact widgets, formatting, and status rendering for Context Tree diagnostics.",
+		"updatedAt": "2026-05-02",
+		"updatedBy": "agent"
+	},
+	"sources": {
+		"piCustomUi": {
+			"type": "url",
+			"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md",
+			"kind": "pi-doc",
+			"reason": "Pi UI APIs used by status and widget rendering",
+			"mode": { "type": "sections", "names": ["Custom UI", "ExtensionContext"] }
+		},
+		"implementationTui": {
+			"type": "file",
+			"path": "../../docs/implementation.md",
+			"kind": "reference",
+			"reason": "TUI command/detail expectations and diagnostic surface",
+			"mode": { "type": "sections", "names": ["Runtime behavior", "Commands", "Tests unitaires et déterminisme"] }
+		}
+	},
+	"injection_rules": [
+		{
+			"match": ["**/*.ts"],
+			"inject": [
+				{ "source": "implementationTui", "on": "tool:read" },
+				{ "source": "piCustomUi", "on": "tool:read" },
+				{ "source": "implementationTui", "on": ["tool:edit", "tool:write"] }
+			]
+		}
+	]
+}

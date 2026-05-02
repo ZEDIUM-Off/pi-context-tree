@@ -1,0 +1,35 @@
+{
+	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.4.0/schemas/context.schema.json",
+	"stability": {
+		"state": "stable",
+		"summary": "Slash command registration and command handlers for status, explain, cache, init, upgrade, and subagent workflows.",
+		"updatedAt": "2026-05-02",
+		"updatedBy": "agent"
+	},
+	"sources": {
+		"implementationCommands": {
+			"type": "file",
+			"path": "../../docs/implementation.md",
+			"kind": "reference",
+			"reason": "Command surface and compatibility expectations",
+			"mode": { "type": "sections", "names": ["Commands", "Tests unitaires et déterminisme"] }
+		},
+		"architectureCommands": {
+			"type": "file",
+			"path": "../../docs/architecture-review.md",
+			"kind": "architecture",
+			"reason": "Command module responsibility boundaries",
+			"mode": { "type": "sections", "names": ["Current state", "Target architecture"] }
+		}
+	},
+	"injection_rules": [
+		{
+			"match": ["**/*.ts"],
+			"inject": [
+				{ "source": "implementationCommands", "on": "tool:read" },
+				{ "source": "architectureCommands", "on": "tool:read" },
+				{ "source": "implementationCommands", "on": ["tool:edit", "tool:write"] }
+			]
+		}
+	]
+}

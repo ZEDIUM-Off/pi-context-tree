@@ -1,5 +1,5 @@
 {
-	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.3.0/schemas/context.schema.json",
+	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.4.0/schemas/context.schema.json",
 	"stability": {
 		"state": "canonical",
 		"summary": "Core Context Tree implementation. Treat code here as trusted local pattern for resolver, schema, rules, commands, and TUI behavior.",
@@ -11,7 +11,7 @@
 			"type": "url",
 			"url": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/docs/extensions.md",
 			"kind": "pi-doc",
-			"reason": "Pi extension lifecycle hooks, system prompt injection, tool interception, messages, commands, UI APIs",
+			"reason": "Pi extension lifecycle hooks and extension API contracts",
 			"mode": {
 				"type": "sections",
 				"names": [
@@ -19,8 +19,7 @@
 					"Agent Events",
 					"Tool Events",
 					"ExtensionContext",
-					"ExtensionAPI Methods",
-					"Custom UI"
+					"ExtensionAPI Methods"
 				]
 			}
 		},
@@ -31,21 +30,23 @@
 			"mode": {
 				"type": "ref"
 			}
+		},
+		"architecture": {
+			"type": "file",
+			"path": "../docs/architecture-review.md",
+			"kind": "architecture",
+			"reason": "Current source responsibility boundaries and target architecture",
+			"mode": {
+				"type": "sections",
+				"names": [
+					"Current state",
+					"Target architecture",
+					"Public API boundaries"
+				]
+			}
 		}
 	},
 	"injection_rules": [
-		{
-			"inject": [
-				{
-					"source": "piExtensions",
-					"on": "agent:start"
-				},
-				{
-					"source": "implementation",
-					"on": "agent:start"
-				}
-			]
-		},
 		{
 			"match": [
 				"index.ts"
@@ -63,13 +64,21 @@
 				"context-tree.ts",
 				"permissions.ts",
 				"schema.ts",
-				"bundle.ts",
 				"normalize.ts",
-				"match.ts"
+				"match.ts",
+				"scan.ts",
+				"extract.ts",
+				"cache.ts",
+				"public-api.ts",
+				"hooks.ts"
 			],
 			"inject": [
 				{
 					"source": "implementation",
+					"on": "tool:read"
+				},
+				{
+					"source": "architecture",
 					"on": "tool:read"
 				},
 				{
@@ -83,8 +92,8 @@
 						"names": [
 							"Schema target",
 							"Resolution of scopes",
+							"Matching",
 							"Rule resolution",
-							"Runtime behavior",
 							"Tests unitaires et déterminisme"
 						]
 					}

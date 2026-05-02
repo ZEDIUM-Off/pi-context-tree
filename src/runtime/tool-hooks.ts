@@ -1,12 +1,15 @@
 import path from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { buildBundle, explainPath, renderBundle } from "../bundle.js";
+
+import type { buildBundle } from "../bundle.js";
 import { decideScopeAccess } from "../permissions.js";
+import { updateActiveInjections } from "../runtime-context/active-injection-registry.js";
+import { resolveHookBatch } from "../runtime-context/batch-resolver.js";
 import { scanContextParents } from "../scan.js";
 import type { HookName } from "../schema.js";
 import type { TuiApi } from "../tui.js";
 import type { RuntimeState } from "./state.js";
-import { showInjection } from "./state.js";
+import { showActiveInjection } from "./state.js";
 import { toolHook, toolTargetPath } from "./tool-target.js";
 
 export type ToolHookDeps = {
@@ -21,6 +24,47 @@ export type ToolHookDeps = {
 	maybeTrackBranch: (ctx: { ui: TuiApi }, cwd: string, target: string) => void;
 };
 
+async function resolveAndActivate(
+	state: RuntimeState,
+	cwd: string,
+	target: string,
+	hook: HookName,
+	trigger: "assistant_tool_call" | "assistant_tool_result",
+	toolName?: string,
+	toolCallId?: string,
+) {
+	const invocation = {
+		hook,
+		target,
+		trigger,
+		...(toolName ? { toolName } : {}),
+		...(toolCallId ? { toolCallId } : {}),
+	};
+	const resolution = await resolveHookBatch({
+		params: state.injectionParams,
+		invocations: [invocation],
+		rootDir: cwd,
+	});
+	state.resolutionHistory = [resolution, ...state.resolutionHistory].slice(
+		0,
+		50,
+	);
+	state.activeChanges = updateActiveInjections({
+		registry: state.activeInjections,
+		params: resolution.selected,
+		hook,
+		targets: [target],
+		warnings: resolution.warnings,
+		trace: {
+			trigger,
+			synthetic: false,
+			...(toolName ? { toolName } : {}),
+			...(toolCallId ? { toolCallId } : {}),
+		},
+	});
+	return resolution;
+}
+
 export function registerToolHooks(
 	pi: ExtensionAPI,
 	state: RuntimeState,
@@ -34,28 +78,32 @@ export function registerToolHooks(
 		if (!hook) return;
 		deps.maybeTrackBranch(ctx, ctx.cwd, target);
 		const targetScopes = await scanContextParents(ctx.cwd, target);
-		const explain = explainPath(ctx.cwd, targetScopes, target, hook);
+		if (state.editSession && (hook === "tool:edit" || hook === "tool:write"))
+			return {
+				block: true,
+				reason:
+					"Context Tree edit session is active; use ct_patch for authorized targets.",
+			};
+		const resolution = await resolveAndActivate(
+			state,
+			ctx.cwd,
+			target,
+			hook,
+			"assistant_tool_call",
+			event.toolName,
+			event.toolCallId,
+		);
+		showActiveInjection(state, ctx);
 		if (
 			(hook === "tool:edit" || hook === "tool:write") &&
-			explain.sources.length > 0
+			resolution.selected.length > 0
 		) {
-			const bundle = await buildBundle(ctx.cwd, explain);
-			const key = `${target}:${hook}:${bundle.bundleHash}`;
+			const key = `${target}:${hook}:${resolution.selected.map((item) => item.paramId).join(",")}`;
 			if (!state.preflightSatisfied.has(key)) {
 				state.preflightSatisfied.add(key);
-				state.injectedThisTurn.add(key);
-				showInjection(state, ctx, ctx.cwd, bundle);
-				pi.sendMessage(
-					{
-						customType: "context-tree",
-						content: renderBundle(bundle),
-						display: false,
-					},
-					{ deliverAs: "steer", triggerTurn: true },
-				);
 				return {
 					block: true,
-					reason: `Context Tree injected ${hook} context for ${target}. Retry after reading it.`,
+					reason: `Context Tree updated active ${hook} context for ${target}. Retry now that the active stack will be supplied through the context hook.`,
 				};
 			}
 		}
@@ -91,32 +139,23 @@ export function registerToolHooks(
 		const target = toolTargetPath(event.toolName, event.input);
 		if (!target) return;
 		try {
-			const { bundle, rendered } = await deps.resolveAndRender(
+			await resolveAndActivate(
+				state,
 				ctx.cwd,
 				target,
 				"tool:read",
+				"assistant_tool_result",
+				event.toolName,
+				event.toolCallId,
 			);
-			if (bundle.sources.length === 0) return;
-			const key = `${target}:tool:read:${bundle.bundleHash}`;
-			if (state.injectedThisTurn.has(key)) return;
-			state.injectedThisTurn.add(key);
-			showInjection(state, ctx, ctx.cwd, bundle);
-			return {
-				content: [
-					...event.content,
-					{ type: "text", text: `\n\n---\n\n${rendered}` },
-				],
-			};
+			showActiveInjection(state, ctx);
+			return undefined;
 		} catch (error) {
-			return {
-				content: [
-					...event.content,
-					{
-						type: "text",
-						text: `\n\nContext Tree read injection failed for ${target}: ${error instanceof Error ? error.message : String(error)}`,
-					},
-				],
-			};
+			ctx.ui.notify(
+				`Context Tree read context update failed for ${target}: ${error instanceof Error ? error.message : String(error)}`,
+				"error",
+			);
+			return undefined;
 		}
 	});
 }

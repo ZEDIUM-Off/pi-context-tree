@@ -122,8 +122,14 @@ export const urlSourceDefinitionSchema = urlInjectSchema;
 export const sourceDefinitionSchema = injectObjectSchema;
 
 export const injectionItemSchema = sourceOverrideSchema.extend({ source: z.string().min(1), on: onSelectorSchema });
-export const injectionRuleSchema = z.object({ match: z.array(z.string().min(1)).min(1).optional(), inject: z.array(injectionItemSchema).min(1) }).strict().superRefine((value, ctx) => {
-	if (value.match && !value.match.some((pattern) => !pattern.startsWith("!")))
+export const grepMatchSchema = z.object({
+	files: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]),
+	grep: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]),
+	maxBytes: z.number().int().positive().optional(),
+}).strict();
+export const matchEntrySchema = z.union([z.string().min(1), grepMatchSchema]);
+export const injectionRuleSchema = z.object({ match: z.array(matchEntrySchema).min(1).optional(), inject: z.array(injectionItemSchema).min(1) }).strict().superRefine((value, ctx) => {
+	if (value.match && !value.match.some((entry) => typeof entry !== "string" || !entry.startsWith("!")))
 		ctx.addIssue({ code: "custom", message: "match must contain at least one positive pattern", path: ["match"] });
 	const allowed = value.match ? pathAwareHooks : runtimeHooks;
 	const label = value.match ? "path-aware" : "runtime";
@@ -164,6 +170,8 @@ export type SourceOverride = z.infer<typeof sourceOverrideSchema>;
 export type InjectObject = z.infer<typeof injectObjectSchema>;
 export type SourceDefinition = z.infer<typeof sourceDefinitionSchema>;
 export type InjectionItem = z.infer<typeof injectionItemSchema>;
+export type GrepMatch = z.infer<typeof grepMatchSchema>;
+export type MatchEntry = z.infer<typeof matchEntrySchema>;
 export type InjectionRule = z.infer<typeof injectionRuleSchema>;
 export type InjectInput = z.infer<typeof injectSchema>;
 export type BranchingConfig = z.infer<typeof branchingSchema>;

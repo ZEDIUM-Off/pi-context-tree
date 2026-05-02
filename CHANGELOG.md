@@ -6,6 +6,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-02
+
+### Added
+
+- Added active-stack runtime context injection with prompt `@file` references, synthetic `tool:read` activation, explicit activation provenance, and TUI feedback for effective context changes.
+- Added Context Tree edit-tool feedback: `ct_edit_request` and `ct_patch` now provide custom TUI rendering plus agent-readable patch summaries with line counts and focused diff previews.
+
+### Changed
+
+- Clarified `session:start`, `agent:start`, and `tool:*` hook timing in schema documentation and reduced self-context child-scope `agent:start` noise in favor of path-aware tool hooks.
+- Reset active runtime state on `session_start` / reload so removed or changed `CONTEXT.json` rules cannot remain stale in the active stack.
+- Removed `agent:start` injections from `src/CONTEXT.json`; source-level self-context now activates from path-aware file reads/edits instead of every prompt.
+- Improved collapsed `ct_patch` TUI output so it shows a small diff preview plus an explicit expand hint instead of only saying that expansion is possible.
+
+### Fixed
+
+- Fixed `ct_patch` support for creating missing authorized files with one empty-`oldText` patch.
+
 ## [0.3.0] - 2026-04-30
 
 ### Added
@@ -99,7 +117,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 - Synced `pnpm-lock.yaml` for reproducible installs.
 
-[Unreleased]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.2.0...v0.2.1
