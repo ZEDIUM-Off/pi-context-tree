@@ -6,6 +6,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-05-02
+
+### Fixed
+
+- Remap direct built-in `edit` and `write` tool calls to the Context Tree edit protocol by blocking them with instructions to use `ct_edit_request` then `ct_patch`.
+
 ## [0.4.0] - 2026-05-02
 
 ### Added
@@ -117,7 +123,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 - Synced `pnpm-lock.yaml` for reproducible installs.
 
-[Unreleased]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.2.1...v0.2.2

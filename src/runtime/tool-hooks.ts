@@ -78,12 +78,15 @@ export function registerToolHooks(
 		if (!hook) return;
 		deps.maybeTrackBranch(ctx, ctx.cwd, target);
 		const targetScopes = await scanContextParents(ctx.cwd, target);
-		if (state.editSession && (hook === "tool:edit" || hook === "tool:write"))
+		if (hook === "tool:edit" || hook === "tool:write") {
+			const protocol = state.editSession
+				? "Use ct_patch for authorized targets."
+				: "Call ct_edit_request first with the intended target, then use ct_patch.";
 			return {
 				block: true,
-				reason:
-					"Context Tree edit session is active; use ct_patch for authorized targets.",
+				reason: `Context Tree remaps direct ${event.toolName} calls to its edit protocol. ${protocol}`,
 			};
+		}
 		const resolution = await resolveAndActivate(
 			state,
 			ctx.cwd,
@@ -94,19 +97,6 @@ export function registerToolHooks(
 			event.toolCallId,
 		);
 		showActiveInjection(state, ctx);
-		if (
-			(hook === "tool:edit" || hook === "tool:write") &&
-			resolution.selected.length > 0
-		) {
-			const key = `${target}:${hook}:${resolution.selected.map((item) => item.paramId).join(",")}`;
-			if (!state.preflightSatisfied.has(key)) {
-				state.preflightSatisfied.add(key);
-				return {
-					block: true,
-					reason: `Context Tree updated active ${hook} context for ${target}. Retry now that the active stack will be supplied through the context hook.`,
-				};
-			}
-		}
 		const nearest = targetScopes.at(-1);
 		const guard = nearest?.config.permissions?.scopeGuard;
 		if (nearest && guard) {
