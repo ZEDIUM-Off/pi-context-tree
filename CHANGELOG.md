@@ -6,6 +6,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-05-04
+
+### Fixed
+
+- Fixed parent `CONTEXT.json` scanning for existing extensionless files and dotfiles such as `.npmrc` and `.husky/pre-commit`.
+
 ## [0.4.1] - 2026-05-02
 
 ### Fixed
@@ -123,7 +129,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 - Synced `pnpm-lock.yaml` for reproducible installs.
 
-[Unreleased]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ZEDIUM-Off/pi-context-tree/compare/v0.2.2...v0.3.0
