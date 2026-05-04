@@ -84,6 +84,7 @@ Expected tarball contents should include:
 ```text
 src/**
 schemas/context.schema.json
+schemas/versions/latest/context.schema.json
 README.md
 AGENTS.md
 CONTRIBUTING.md
@@ -116,6 +117,21 @@ Expected:
 
 ```text
 Context Tree validation: ...
+```
+
+## Schema snapshots
+
+`pnpm schema:release` writes both immutable versioned snapshots and a moving latest snapshot:
+
+```text
+schemas/versions/vX.Y.Z/context.schema.json
+schemas/versions/latest/context.schema.json
+```
+
+Repository `CONTEXT.json` files should use the latest schema URL so validation catches drift against the current schema immediately:
+
+```json
+"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/main/schemas/versions/latest/context.schema.json"
 ```
 
 ## Versioning

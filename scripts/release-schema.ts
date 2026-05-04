@@ -25,13 +25,25 @@ const rawBase = repository.replace(
 	"https://github.com/",
 	"https://raw.githubusercontent.com/",
 );
-const id = `${rawBase}/v${version}/schemas/context.schema.json`;
-const withId = { $id: id, ...schema };
+const versionedId = `${rawBase}/v${version}/schemas/context.schema.json`;
+const versionedSchema = { $id: versionedId, ...schema };
+const latestId = `${rawBase}/main/schemas/versions/latest/context.schema.json`;
+const latestSchema = { $id: latestId, ...schema };
 
-const versionDir = path.join("schemas", "versions", `v${version}`);
-await mkdir(versionDir, { recursive: true });
-await writeFile(
-	path.join(versionDir, "context.schema.json"),
-	`${JSON.stringify(withId, null, 2)}\n`,
-	"utf8",
+async function writeSchemaSnapshot(dir: string, schemaSnapshot: unknown): Promise<void> {
+	await mkdir(dir, { recursive: true });
+	await writeFile(
+		path.join(dir, "context.schema.json"),
+		`${JSON.stringify(schemaSnapshot, null, 2)}\n`,
+		"utf8",
+	);
+}
+
+await writeSchemaSnapshot(
+	path.join("schemas", "versions", `v${version}`),
+	versionedSchema,
+);
+await writeSchemaSnapshot(
+	path.join("schemas", "versions", "latest"),
+	latestSchema,
 );

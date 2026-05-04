@@ -1,5 +1,5 @@
 {
-	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.4.0/schemas/context.schema.json",
+	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/main/schemas/versions/latest/context.schema.json",
 	"stability": {
 		"state": "stable",
 		"summary": "Schema-reference migration and upgrade planning utilities for CONTEXT.json files.",

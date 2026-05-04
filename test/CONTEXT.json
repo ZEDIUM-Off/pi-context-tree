@@ -1,5 +1,5 @@
 {
-	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/v0.4.0/schemas/context.schema.json",
+	"$schema": "https://raw.githubusercontent.com/ZEDIUM-Off/pi-context-tree/main/schemas/versions/latest/context.schema.json",
 	"stability": {
 		"state": "canonical",
 		"summary": "Tests define expected behavior for schema, resolver, permissions, and TUI. Use as source of truth for behavior changes.",
