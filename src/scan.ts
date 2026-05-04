@@ -1,5 +1,5 @@
 import type { Dirent } from "node:fs";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import { type ContextFile, contextFileSchema } from "./schema.js";
@@ -44,16 +44,25 @@ async function readContextScope(
 	};
 }
 
+async function parentScanPath(targetAbs: string): Promise<string> {
+	try {
+		const targetStat = await stat(targetAbs);
+		return targetStat.isDirectory() ? targetAbs : path.dirname(targetAbs);
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+		return targetAbs.endsWith("CONTEXT.json") || path.extname(targetAbs)
+			? path.dirname(targetAbs)
+			: targetAbs;
+	}
+}
+
 export async function scanContextParents(
 	cwd: string,
 	targetPath = ".",
 ): Promise<ContextScope[]> {
 	const targetAbs = path.resolve(cwd, stripAtPrefix(targetPath));
-	const statPath =
-		targetAbs.endsWith("CONTEXT.json") || path.extname(targetAbs)
-			? path.dirname(targetAbs)
-			: targetAbs;
-	const relParts = toPosix(path.relative(cwd, statPath))
+	const scanPath = await parentScanPath(targetAbs);
+	const relParts = toPosix(path.relative(cwd, scanPath))
 		.split("/")
 		.filter(Boolean);
 	const dirs = [cwd];

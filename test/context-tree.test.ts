@@ -338,6 +338,38 @@ test("scan and explain use implicit scope and relative matching", async () => {
 	assert.equal(explained.sources.length, 2);
 });
 
+test("scan treats existing extensionless files and dotfiles as files", async () => {
+	const repo = tempRepo();
+	await mkdir(join(repo, ".husky"), { recursive: true });
+	await writeFile(
+		join(repo, "CONTEXT.json"),
+		JSON.stringify({
+			$schema: "./schemas/context.schema.json",
+			sources: { rules: { type: "file", path: "./rules.md" } },
+			injection_rules: [
+				{
+					match: [".npmrc", ".husky/**/*"],
+					inject: [{ source: "rules", on: "tool:read" }],
+				},
+			],
+		}),
+	);
+	await writeFile(join(repo, "rules.md"), "rules");
+	await writeFile(join(repo, ".npmrc"), "node-linker=hoisted");
+	await writeFile(join(repo, ".husky/pre-commit"), "pnpm check:staged");
+
+	for (const target of [".npmrc", ".husky/pre-commit"]) {
+		const scopes = await scanContextParents(repo, target);
+		assert.equal(scopes.length, 1);
+		assert.equal(scopes[0]?.basePath, "<root>");
+		const explained = await explainPath(repo, scopes, target, "tool:read");
+		assert.equal(explained.sources.length, 1);
+		const [source] = explained.sources;
+		assert.equal(source?.type, "file");
+		if (source?.type === "file") assert.equal(source.path, "./rules.md");
+	}
+});
+
 test("scan includes user-global CONTEXT before project scopes", async () => {
 	const repo = tempRepo();
 	const globalDir = tempRepo();
